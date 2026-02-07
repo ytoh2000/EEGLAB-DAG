@@ -1,0 +1,42 @@
+{
+    "name": "Load Dataset",
+    "function": "pop_loadset",
+    "type": "process",
+    "description": "Load an EEG dataset",
+    "category": "File",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_loadset.m",
+    "inputs": [
+        {
+            "name": "filename",
+            "type": "filepath",
+            "description": "Dataset filename (or full path)",
+            "required": true,
+            "default": ""
+        },
+        {
+            "name": "filepath",
+            "type": "directory",
+            "description": "Dataset filepath (optional if full path provided in filename)",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "loadmode",
+            "type": "enum",
+            "description": "Load mode (all data or info only)",
+            "required": false,
+            "options": [
+                "all",
+                "info"
+            ],
+            "default": "all"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Loaded EEG structure"
+        }
+    ]
+}

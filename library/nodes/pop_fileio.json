@@ -1,0 +1,55 @@
+{
+    "name": "Import Data (FileIO)",
+    "function": "pop_fileio",
+    "type": "input",
+    "description": "Import data using the FileIO toolbox",
+    "category": "File",
+    "github_url": "https://github.com/NBT-Analytics/EEGLABSVN/blob/master/functions/popfunc/pop_fileio.m",
+    "inputs": [
+        {
+            "name": "filename",
+            "type": "filepath",
+            "description": "Path to the data file",
+            "required": true,
+            "default": ""
+        },
+        {
+            "name": "channels",
+            "type": "string",
+            "description": "List of channel indices (e.g. '1:32'). Leave empty for all.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "samples",
+            "type": "string",
+            "description": "Sample range [min max] (e.g. '1 1000'). Leave empty for all.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "trials",
+            "type": "string",
+            "description": "Trial range [min max]. Leave empty for all.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "memorymapped",
+            "type": "enum",
+            "options": [
+                "on",
+                "off"
+            ],
+            "description": "Import as memory mapped file",
+            "default": "off"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Imported EEG structure"
+        }
+    ]
+}

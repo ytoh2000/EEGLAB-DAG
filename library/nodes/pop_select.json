@@ -1,0 +1,65 @@
+{
+    "name": "Select Data",
+    "function": "pop_select",
+    "type": "process",
+    "description": "Select or remove data based on time, epochs, or channels.",
+    "category": "Edit",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_select.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "time",
+            "type": "string",
+            "description": "Retain time range [min max] in seconds (e.g. [0 100]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "rmtime",
+            "type": "string",
+            "description": "Remove time range [min max] in seconds.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "trial",
+            "type": "string",
+            "description": "Retain epochs by index (e.g. [1:10]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "rmtrial",
+            "type": "string",
+            "description": "Remove epochs by index (e.g. [5 10]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "channel",
+            "type": "string",
+            "description": "Retain channels by index or name (e.g. [1:32]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "rmchannel",
+            "type": "string",
+            "description": "Remove channels by index or name.",
+            "required": false,
+            "default": ""
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Selected EEG structure"
+        }
+    ]
+}

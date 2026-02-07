@@ -1,0 +1,55 @@
+{
+    "name": "Re-reference",
+    "function": "pop_reref",
+    "type": "process",
+    "description": "Convert an EEG dataset to average reference or to a new common reference channel.",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_reref.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "ref",
+            "type": "string",
+            "description": "Reference: [] (empty) for average, or channel indices/names (e.g. 'Cz').",
+            "required": true,
+            "default": "[]"
+        },
+        {
+            "name": "exclude",
+            "type": "string",
+            "description": "Channel indices to exclude (e.g. [1 2]).",
+            "required": false,
+            "default": "[]"
+        },
+        {
+            "name": "keepref",
+            "type": "enum",
+            "description": "Keep the reference channel?",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "off"
+        },
+        {
+            "name": "interpchan",
+            "type": "string",
+            "description": "Channels to interpolate prior to re-referencing (e.g. [] or 'off').",
+            "required": false,
+            "default": "off"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Re-referenced EEG structure"
+        }
+    ]
+}

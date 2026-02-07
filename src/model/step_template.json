@@ -1,0 +1,101 @@
+[
+    {
+        "name": "Load Dataset",
+        "function": "pop_loadset",
+        "type": "source",
+        "description": "Load a dataset from disk or memory",
+        "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_loadset.m",
+        "inputs": [
+            {
+                "name": "filename",
+                "type": "filepath",
+                "description": "Path to the dataset file (.set)",
+                "required": true,
+                "default": ""
+            },
+            {
+                "name": "filepath",
+                "type": "directory",
+                "description": "Directory containing the dataset",
+                "required": false,
+                "default": ""
+            }
+        ],
+        "outputs": [
+            {
+                "name": "EEG",
+                "type": "dataset",
+                "description": "Loaded EEG structure"
+            }
+        ]
+    },
+    {
+        "name": "Filter",
+        "function": "pop_eegfiltnew",
+        "type": "process",
+        "description": "Filter dataset using windowed sinc FIR filter",
+        "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_eegfiltnew.m",
+        "inputs": [
+            {
+                "name": "EEG",
+                "type": "dataset",
+                "description": "Input EEG structure",
+                "required": true
+            },
+            {
+                "name": "locutoff",
+                "type": "float",
+                "description": "Lower edge of the frequency pass band (Hz)",
+                "required": false,
+                "default": 0
+            },
+            {
+                "name": "hicutoff",
+                "type": "float",
+                "description": "Higher edge of the frequency pass band (Hz)",
+                "required": false,
+                "default": 0
+            }
+        ],
+        "outputs": [
+            {
+                "name": "EEG",
+                "type": "dataset",
+                "description": "Filtered EEG structure"
+            }
+        ]
+    },
+    {
+        "name": "Run ICA",
+        "function": "pop_runica",
+        "type": "process",
+        "description": "Run Independent Component Analysis",
+        "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_runica.m",
+        "inputs": [
+            {
+                "name": "EEG",
+                "type": "dataset",
+                "description": "Input EEG structure",
+                "required": true
+            },
+            {
+                "name": "icatype",
+                "type": "enum",
+                "options": [
+                    "runica",
+                    "fastica",
+                    "jader"
+                ],
+                "description": "ICA algorithm to use",
+                "default": "runica"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "EEG",
+                "type": "dataset",
+                "description": "EEG structure with ICA weights"
+            }
+        ]
+    }
+]

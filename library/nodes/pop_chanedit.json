@@ -1,0 +1,50 @@
+{
+    "name": "Edit Channel Locations",
+    "function": "pop_chanedit",
+    "type": "process",
+    "description": "Edit channel locations, supporting lookup of standard locations.",
+    "category": "Edit",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_chanedit.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "lookup",
+            "type": "string",
+            "description": "Look up standard locations (e.g. 'standard-10-5-cap385.elp').",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "load",
+            "type": "filepath",
+            "description": "Load custom channel location file.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "eval",
+            "type": "string",
+            "description": "Evaluate custom command (e.g. 'chan = chan(1:30)').",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "headrad",
+            "type": "float",
+            "description": "Head radius (optional, e.g. for spherical models).",
+            "required": false
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "EEG structure with updated channel locations"
+        }
+    ]
+}

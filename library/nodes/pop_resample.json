@@ -1,0 +1,44 @@
+{
+    "name": "Resample",
+    "function": "pop_resample",
+    "type": "process",
+    "category": "Tools",
+    "description": "Resample the dataset to a new frequency.",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_resample.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "freq",
+            "type": "float",
+            "description": "New sampling rate (Hz) (e.g. 250).",
+            "required": true,
+            "default": 250
+        },
+        {
+            "name": "fc",
+            "type": "float",
+            "description": "Anti-aliasing filter cutoff (pi rad / sample).",
+            "required": false,
+            "default": 0.9
+        },
+        {
+            "name": "df",
+            "type": "float",
+            "description": "Anti-aliasing filter transition band width.",
+            "required": false,
+            "default": 0.2
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Resampled EEG structure"
+        }
+    ]
+}

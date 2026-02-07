@@ -1,0 +1,60 @@
+{
+    "name": "Save Dataset",
+    "function": "pop_saveset",
+    "type": "output",
+    "category": "File",
+    "description": "Save one or more EEG dataset structures.",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_saveset.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "filename",
+            "type": "string",
+            "description": "Name of the file to save to (e.g. 'mydata.set').",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "filepath",
+            "type": "directory",
+            "description": "Path of the file to save to.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "savemode",
+            "type": "enum",
+            "description": "Save mode: 'resave', 'onefile' (set), or 'twofiles' (set+fdt).",
+            "required": false,
+            "options": [
+                "resave",
+                "onefile",
+                "twofiles"
+            ],
+            "default": "twofiles"
+        },
+        {
+            "name": "check",
+            "type": "enum",
+            "description": "Perform extended syntax check?",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "off"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Saved EEG structure"
+        }
+    ]
+}

@@ -1,0 +1,44 @@
+{
+    "name": "Remove Baseline",
+    "function": "pop_rmbase",
+    "type": "process",
+    "category": "Tools",
+    "description": "Remove channel baseline means from an epoched or continuous EEG dataset.",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_rmbase.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "timerange",
+            "type": "string",
+            "description": "Baseline latency range [min max] in ms (e.g. [-100 0]). Empty = whole epoch.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "pointrange",
+            "type": "string",
+            "description": "Baseline points vector (e.g. 1:56). Overwritten by timerange.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "chanlist",
+            "type": "string",
+            "description": "List of channels to process (e.g. [1:32]). Default is all.",
+            "required": false,
+            "default": ""
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Baseline-removed EEG structure"
+        }
+    ]
+}

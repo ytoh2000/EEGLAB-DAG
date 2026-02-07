@@ -1,0 +1,75 @@
+{
+    "name": "Topoplot",
+    "function": "pop_topoplot",
+    "type": "visualization",
+    "description": "Plot scalp maps of ERPs or components.",
+    "category": "Plot",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_topoplot.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "typeplot",
+            "type": "enum",
+            "description": "Plot Channels (ERP) or Components (ICA)?",
+            "required": true,
+            "options": [
+                "Channels",
+                "Components"
+            ],
+            "default": "Channels"
+        },
+        {
+            "name": "items",
+            "type": "string",
+            "description": "Latencies (ms) for ERPs, or Component indices (e.g. [1 4]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "title",
+            "type": "string",
+            "description": "Plot title",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "rowcols",
+            "type": "string",
+            "description": "Rows and columns per page (e.g. [2 3]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "plotdip",
+            "type": "enum",
+            "description": "Plot dipoles if available?",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "off"
+        },
+        {
+            "name": "options",
+            "type": "string",
+            "description": "Additional topoplot arguments (e.g. 'style', 'straight').",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "save_as",
+            "type": "filepath",
+            "description": "Save figure to file (e.g. 'myplot.png').",
+            "required": false,
+            "default": "",
+            "mode": "save"
+        }
+    ],
+    "outputs": []
+}

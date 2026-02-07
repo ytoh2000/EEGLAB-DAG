@@ -1,0 +1,62 @@
+{
+    "name": "Epoch",
+    "function": "pop_epoch",
+    "type": "process",
+    "description": "Convert continuous EEG to epoched data time-locked to events.",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_epoch.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "types",
+            "type": "string",
+            "description": "Event types to time-lock to (e.g. 'square' or {'rt', 'resp'}).",
+            "required": true,
+            "default": "{}"
+        },
+        {
+            "name": "timelim",
+            "type": "string",
+            "description": "Epoch limits [start end] in seconds (e.g. [-1 2]).",
+            "required": true,
+            "default": "[-1 2]"
+        },
+        {
+            "name": "valuelim",
+            "type": "string",
+            "description": "Rejection limits [min max] or [max] (e.g. [-100 100]).",
+            "required": false,
+            "default": "[]"
+        },
+        {
+            "name": "newname",
+            "type": "string",
+            "description": "New dataset name",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "epochinfo",
+            "type": "enum",
+            "description": "Propagate event info?",
+            "required": false,
+            "options": [
+                "yes",
+                "no"
+            ],
+            "default": "yes"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Epoched EEG structure"
+        }
+    ]
+}

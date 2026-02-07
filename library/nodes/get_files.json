@@ -1,0 +1,23 @@
+{
+    "name": "Create File Lists",
+    "function": "get_files",
+    "type": "input",
+    "category": "File",
+    "description": "Select files or folders to process.",
+    "inputs": [
+        {
+            "name": "file_paths",
+            "type": "filelist",
+            "description": "List of selected files.",
+            "required": true,
+            "default": []
+        }
+    ],
+    "outputs": [
+        {
+            "name": "files",
+            "type": "filelist",
+            "description": "List of selected files"
+        }
+    ]
+}

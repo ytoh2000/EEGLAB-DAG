@@ -1,0 +1,90 @@
+{
+    "name": "Clean Rawdata",
+    "function": "pop_clean_rawdata",
+    "type": "process",
+    "description": "Clean raw EEG data using ASR (Artifact Subspace Reconstruction). To disable a method, use 'off' or -1.",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/clean_rawdata/blob/master/pop_clean_rawdata.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "FlatlineCriterion",
+            "type": "string",
+            "description": "Max flatline duration (sec). 'off' or -1 to disable.",
+            "required": true,
+            "default": "5",
+            "can_disable": true
+        },
+        {
+            "name": "ChannelCriterion",
+            "type": "string",
+            "description": "Min correlation [0-1]. 'off' or -1 to disable.",
+            "required": true,
+            "default": "0.8",
+            "can_disable": true
+        },
+        {
+            "name": "LineNoiseCriterion",
+            "type": "string",
+            "description": "Max line noise (std dev). 'off' or -1 to disable.",
+            "required": true,
+            "default": "4",
+            "can_disable": true
+        },
+        {
+            "name": "Highpass",
+            "type": "string",
+            "description": "Transition band [lo hi] Hz (e.g. '0.25 0.75'). 'off' or -1 to disable.",
+            "required": true,
+            "default": "0.25 0.75",
+            "can_disable": true
+        },
+        {
+            "name": "BurstCriterion",
+            "type": "string",
+            "description": "ASR max burst std dev. 'off' or -1 to disable.",
+            "required": true,
+            "default": "20",
+            "can_disable": true
+        },
+        {
+            "name": "WindowCriterion",
+            "type": "string",
+            "description": "Max fraction of bad channels in window [0-1]. 'off' or -1 to disable.",
+            "required": true,
+            "default": "0.25",
+            "can_disable": true
+        },
+        {
+            "name": "Distance",
+            "type": "enum",
+            "description": "Distance metric for ASR",
+            "required": true,
+            "options": [
+                "Euclidian",
+                "Riemannian"
+            ],
+            "default": "Euclidian"
+        },
+        {
+            "name": "WindowCriterionTolerances",
+            "type": "string",
+            "description": "Window rejection power tolerances (e.g. '-Inf 7'). 'off' or -1 to disable.",
+            "required": true,
+            "default": "-Inf 7",
+            "can_disable": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Cleaned EEG structure"
+        }
+    ]
+}

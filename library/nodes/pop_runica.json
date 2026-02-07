@@ -1,0 +1,59 @@
+{
+    "name": "Run ICA",
+    "function": "pop_runica",
+    "type": "process",
+    "description": "Run an ICA decomposition of an EEG dataset",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_runica.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "icatype",
+            "type": "enum",
+            "description": "ICA algorithm to use",
+            "required": true,
+            "options": [
+                "runica",
+                "binica",
+                "jader",
+                "fastica"
+            ],
+            "default": "runica"
+        },
+        {
+            "name": "options",
+            "type": "string",
+            "description": "Additional command line options for the algorithm (e.g. 'pca', 10)",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "chanind",
+            "type": "string",
+            "description": "Channel indices to use (e.g. '1:32')",
+            "required": false
+        },
+        {
+            "name": "concatenate",
+            "type": "enum",
+            "description": "Concatenate all input datasets",
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "off"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "EEG structure with ICA weights"
+        }
+    ]
+}

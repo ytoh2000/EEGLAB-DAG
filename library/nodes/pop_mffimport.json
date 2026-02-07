@@ -1,0 +1,54 @@
+{
+    "name": "Import MFF",
+    "function": "pop_mffimport",
+    "type": "process",
+    "category": "File",
+    "description": "Import EGI .mff key/folder to EEGLAB structure.",
+    "github_url": "https://github.com/arnodelorme/mffmatlabio/blob/master/pop_mffimport.m",
+    "required_plugin": "mffmatlabio",
+    "inputs": [
+        {
+            "name": "mffFile",
+            "type": "filepath",
+            "description": "Path to .mff file/folder.",
+            "required": true,
+            "default": ""
+        },
+        {
+            "name": "typefield",
+            "type": "string",
+            "description": "MFF field(s) to use for event types (e.g. 'code').",
+            "required": false,
+            "default": "code"
+        },
+        {
+            "name": "savedat",
+            "type": "enum",
+            "description": "Automatically save imported dataset?",
+            "required": false,
+            "options": [
+                "yes",
+                "no"
+            ],
+            "default": "no"
+        },
+        {
+            "name": "correctevents",
+            "type": "enum",
+            "description": "Automatically correct events?",
+            "required": false,
+            "options": [
+                "yes",
+                "no"
+            ],
+            "default": "no"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Imported EEG structure"
+        }
+    ]
+}

@@ -1,0 +1,44 @@
+{
+    "name": "Interpolate Channels",
+    "function": "pop_interp",
+    "type": "process",
+    "description": "Interpolate bad channels.",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_interp.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "badchans",
+            "type": "string",
+            "description": "Indices of channels to interpolate (e.g. [1 5]).",
+            "required": true,
+            "default": ""
+        },
+        {
+            "name": "method",
+            "type": "enum",
+            "description": "Interpolation method",
+            "required": false,
+            "options": [
+                "spherical",
+                "invdist",
+                "v4",
+                "sphericalKang",
+                "spacetime"
+            ],
+            "default": "spherical"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "EEG structure with interpolated channels"
+        }
+    ]
+}

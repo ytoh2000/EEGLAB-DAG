@@ -1,0 +1,82 @@
+{
+    "name": "Headplot",
+    "function": "pop_headplot",
+    "type": "visualization",
+    "description": "Plot semi-realistic 3-D scalp maps.",
+    "category": "Plot",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_headplot.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "typeplot",
+            "type": "enum",
+            "description": "Plot Channels (ERP) or Components (ICA)?",
+            "required": true,
+            "options": [
+                "Channels",
+                "Components"
+            ],
+            "default": "Channels"
+        },
+        {
+            "name": "items",
+            "type": "string",
+            "description": "Latencies (ms) for ERPs, or Component indices (e.g. [1 4]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "title",
+            "type": "string",
+            "description": "Plot title",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "rowscols",
+            "type": "string",
+            "description": "Rows and columns per page (e.g. [2 3]).",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "colorbar",
+            "type": "enum",
+            "description": "Show colorbar?",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "on"
+        },
+        {
+            "name": "load",
+            "type": "filepath",
+            "description": "Load spline file (.spl)",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "options",
+            "type": "string",
+            "description": "Additional headplot arguments.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "save_as",
+            "type": "filepath",
+            "description": "Save figure to file (e.g. 'headplot.png').",
+            "required": false,
+            "default": "",
+            "mode": "save"
+        }
+    ],
+    "outputs": []
+}

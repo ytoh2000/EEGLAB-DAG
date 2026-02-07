@@ -1,0 +1,61 @@
+{
+    "name": "Filter",
+    "function": "pop_eegfiltnew",
+    "type": "process",
+    "description": "Filter data using Hamming windowed sinc FIR filter",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/plugins/firfilt1.6.2/pop_eegfiltnew.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "locutoff",
+            "type": "float",
+            "description": "Lower edge of the frequency pass band (Hz). 0 for lowpass.",
+            "required": true,
+            "default": 0
+        },
+        {
+            "name": "hicutoff",
+            "type": "float",
+            "description": "Higher edge of the frequency pass band (Hz). 0 for highpass.",
+            "required": true,
+            "default": 0
+        },
+        {
+            "name": "filtorder",
+            "type": "integer",
+            "description": "Filter order. Leave empty for automatic.",
+            "required": false
+        },
+        {
+            "name": "revfilt",
+            "type": "bool",
+            "description": "Invert filter (notch filter)",
+            "default": false
+        },
+        {
+            "name": "minphase",
+            "type": "bool",
+            "description": "Use minimum-phase converted causal filter",
+            "default": false
+        },
+        {
+            "name": "plotfreqz",
+            "type": "bool",
+            "description": "Plot frequency response",
+            "default": false
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Filtered EEG structure"
+        }
+    ]
+}
