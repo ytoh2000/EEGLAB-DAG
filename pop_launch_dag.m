@@ -12,17 +12,23 @@ function pop_launch_dag()
     if ispc
         bin_path = fullfile(plugin_path, 'bin', 'win64', 'main', 'main.exe');
     elseif ismac
-        bin_path = fullfile(plugin_path, 'bin', 'maca64', 'main', 'main');
+        % PyInstaller creates a .app bundle on macOS
+        bin_path = fullfile(plugin_path, 'bin', 'maca64', 'main.app');
     elseif isunix
         bin_path = fullfile(plugin_path, 'bin', 'linux64', 'main', 'main');
     else
         bin_path = '';
     end
 
-    if exist(bin_path, 'file')
+    if exist(bin_path, 'file') || exist(bin_path, 'dir')
         % Found bundled binary!
-        command = sprintf('"%s" &', bin_path);
-        
+        if ismac
+            % macOS requires the 'open' command for .app bundles
+            command = sprintf('open "%s"', bin_path);
+        else
+            command = sprintf('"%s" &', bin_path);
+        end
+
         fprintf('Launching DAG Editor (Bundled)...\n');
         fprintf('Command: %s\n', command);
         system(command);
