@@ -23,17 +23,25 @@ function pop_launch_dag()
     if exist(bin_path, 'file') || exist(bin_path, 'dir')
         % Found bundled binary!
         if ismac
+            % Auto-fix permissions inside the macOS .app bundle
+            exec_file = fullfile(bin_path, 'Contents', 'MacOS', 'main');
+            system(sprintf('chmod +x "%s"', exec_file));
+            
+            % Automatically clear Apple's download quarantine flag 
+            system(sprintf('xattr -cr "%s"', bin_path));
+            
             % macOS requires the 'open' command for .app bundles
             command = sprintf('open "%s"', bin_path);
         else
             command = sprintf('"%s" &', bin_path);
         end
-
+        
         fprintf('Launching DAG Editor (Bundled)...\n');
         fprintf('Command: %s\n', command);
         system(command);
         return;
     end
+
 
     % 2. Fallback: Try to find the virtual environment in the plugin folder
     % (Useful for development or if binary is missing)
