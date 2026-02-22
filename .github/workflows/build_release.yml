@@ -63,7 +63,7 @@ jobs:
 
       - name: Zip Release
         run: |
-          zip -r EEGLAB-DAG-${{ github.ref_name }}.zip . -x ".git/*" ".github/*" ".venv/*" "__pycache__/*" "*.DS_Store"
+          zip -ry EEGLAB-DAG-${{ github.ref_name }}.zip . -x ".git/*" ".github/*" ".venv/*" "__pycache__/*" "*.DS_Store"
         
       - name: Create Release
         uses: softprops/action-gh-release@v1
