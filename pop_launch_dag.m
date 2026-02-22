@@ -30,6 +30,9 @@ function pop_launch_dag()
             % Automatically clear Apple's download quarantine flag 
             system(sprintf('xattr -cr "%s"', bin_path));
             
+            % Forcefully re-sign the app locally for Apple Silicon (M1/M2/M3)
+            system(sprintf('codesign --force --deep -s - "%s"', bin_path));
+            
             % macOS requires the 'open' command for .app bundles
             command = sprintf('open "%s"', bin_path);
         else
@@ -41,6 +44,7 @@ function pop_launch_dag()
         system(command);
         return;
     end
+
 
 
     % 2. Fallback: Try to find the virtual environment in the plugin folder
