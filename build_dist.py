@@ -43,6 +43,10 @@ def build():
         '--clean',                  # Clean PyInstaller cache
         '--hidden-import=PyQt6',
         '--hidden-import=networkx',
+        '--hidden-import=google.genai',
+        '--hidden-import=fitz',
+        '--hidden-import=bs4',
+        '--hidden-import=requests',
         '--distpath', output_dir    # Output to bin/<os_key>
     ]
     
