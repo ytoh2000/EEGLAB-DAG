@@ -1,1 +1,74 @@
-2026-02-06 14:32:31,729 - root - INFO - Starting EEGLAB-DAG Application
+2026-02-26 02:20:49,390 - root - INFO - Starting EEGLAB-DAG Application
+2026-02-26 02:21:01,116 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.frontiersin.org:443
+2026-02-26 02:21:01,211 - urllib3.connectionpool - DEBUG - https://www.frontiersin.org:443 "GET /journals/human-neuroscience/articles/10.3389/fnhum.2025.1616456/full HTTP/1.1" 200 164354
+2026-02-26 02:21:04,763 - httpcore.connection - DEBUG - connect_tcp.started host='generativelanguage.googleapis.com' port=443 local_address=None timeout=None socket_options=None
+2026-02-26 02:21:04,808 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7fd5931bb790>
+2026-02-26 02:21:04,809 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x7fd59325b140> server_hostname='generativelanguage.googleapis.com' timeout=None
+2026-02-26 02:21:04,825 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7fd5931bb400>
+2026-02-26 02:21:04,826 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'GET']>
+2026-02-26 02:21:04,826 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-02-26 02:21:04,829 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'GET']>
+2026-02-26 02:21:04,830 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-02-26 02:21:04,830 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'GET']>
+2026-02-26 02:21:04,901 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Thu, 26 Feb 2026 07:21:04 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=63'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-02-26 02:21:04,902 - httpx - INFO - HTTP Request: GET https://generativelanguage.googleapis.com/v1beta/models "HTTP/1.1 200 OK"
+2026-02-26 02:21:04,903 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'GET']>
+2026-02-26 02:21:04,904 - httpcore.http11 - DEBUG - receive_response_body.complete
+2026-02-26 02:21:04,905 - httpcore.http11 - DEBUG - response_closed.started
+2026-02-26 02:21:04,905 - httpcore.http11 - DEBUG - response_closed.complete
+2026-02-26 02:21:04,918 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'GET']>
+2026-02-26 02:21:04,918 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-02-26 02:21:04,918 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'GET']>
+2026-02-26 02:21:04,918 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-02-26 02:21:04,919 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'GET']>
+2026-02-26 02:21:04,982 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Thu, 26 Feb 2026 07:21:04 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=55'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-02-26 02:21:04,982 - httpx - INFO - HTTP Request: GET https://generativelanguage.googleapis.com/v1beta/models "HTTP/1.1 200 OK"
+2026-02-26 02:21:04,983 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'GET']>
+2026-02-26 02:21:04,983 - httpcore.http11 - DEBUG - receive_response_body.complete
+2026-02-26 02:21:04,983 - httpcore.http11 - DEBUG - response_closed.started
+2026-02-26 02:21:04,983 - httpcore.http11 - DEBUG - response_closed.complete
+2026-02-26 02:21:04,988 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2026-02-26 02:21:05,010 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2026-02-26 02:21:05,011 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-02-26 02:21:05,011 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2026-02-26 02:21:05,023 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-02-26 02:21:05,026 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2026-02-26 02:21:38,086 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Thu, 26 Feb 2026 07:21:38 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=33066'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-02-26 02:21:38,087 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-02-26 02:21:38,087 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2026-02-26 02:21:38,088 - httpcore.http11 - DEBUG - receive_response_body.complete
+2026-02-26 02:21:38,088 - httpcore.http11 - DEBUG - response_closed.started
+2026-02-26 02:21:38,088 - httpcore.http11 - DEBUG - response_closed.complete
+2026-02-26 02:21:38,089 - httpcore.connection - DEBUG - close.started
+2026-02-26 02:21:38,089 - httpcore.connection - DEBUG - close.complete
+2026-02-26 02:21:46,988 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.frontiersin.org:443
+2026-02-26 02:21:47,047 - urllib3.connectionpool - DEBUG - https://www.frontiersin.org:443 "GET /journals/human-neuroscience/articles/10.3389/fnhum.2025.1616456/full HTTP/1.1" 200 164354
+2026-02-26 02:21:48,410 - httpcore.connection - DEBUG - connect_tcp.started host='generativelanguage.googleapis.com' port=443 local_address=None timeout=None socket_options=None
+2026-02-26 02:21:48,434 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7fd592a2a8e0>
+2026-02-26 02:21:48,434 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x7fd592f0cb40> server_hostname='generativelanguage.googleapis.com' timeout=None
+2026-02-26 02:21:48,451 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7fd592a2a9d0>
+2026-02-26 02:21:48,452 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'GET']>
+2026-02-26 02:21:48,452 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-02-26 02:21:48,452 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'GET']>
+2026-02-26 02:21:48,452 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-02-26 02:21:48,452 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'GET']>
+2026-02-26 02:21:48,520 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Thu, 26 Feb 2026 07:21:48 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=59'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-02-26 02:21:48,520 - httpx - INFO - HTTP Request: GET https://generativelanguage.googleapis.com/v1beta/models "HTTP/1.1 200 OK"
+2026-02-26 02:21:48,520 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'GET']>
+2026-02-26 02:21:48,521 - httpcore.http11 - DEBUG - receive_response_body.complete
+2026-02-26 02:21:48,521 - httpcore.http11 - DEBUG - response_closed.started
+2026-02-26 02:21:48,521 - httpcore.http11 - DEBUG - response_closed.complete
+2026-02-26 02:21:48,524 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2026-02-26 02:21:48,525 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2026-02-26 02:21:48,525 - httpcore.http11 - DEBUG - send_request_headers.complete
+2026-02-26 02:21:48,525 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2026-02-26 02:21:48,525 - httpcore.http11 - DEBUG - send_request_body.complete
+2026-02-26 02:21:48,525 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2026-02-26 02:22:27,821 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Thu, 26 Feb 2026 07:22:27 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=39287'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-02-26 02:22:27,822 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-02-26 02:22:27,822 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2026-02-26 02:22:27,822 - httpcore.http11 - DEBUG - receive_response_body.complete
+2026-02-26 02:22:27,822 - httpcore.http11 - DEBUG - response_closed.started
+2026-02-26 02:22:27,822 - httpcore.http11 - DEBUG - response_closed.complete
+2026-02-26 02:22:27,823 - httpcore.connection - DEBUG - close.started
+2026-02-26 02:22:27,823 - httpcore.connection - DEBUG - close.complete

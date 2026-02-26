@@ -4,3 +4,8 @@ PyQt6-sip>=13.6.0
 pyyaml
 networkx
 pyinstaller
+# Phase 3: LLM Pipeline Builder
+google-genai>=1.0.0
+PyMuPDF>=1.24.0
+beautifulsoup4>=4.12
+requests>=2.31

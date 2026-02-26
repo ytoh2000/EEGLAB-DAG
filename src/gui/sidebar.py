@@ -1,8 +1,29 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QTreeWidget, QTreeWidgetItem
-from PyQt6.QtCore import Qt, QMimeData, pyqtSignal
-from PyQt6.QtGui import QDrag
+from PyQt6.QtCore import Qt, QMimeData, pyqtSignal, QSize
+from PyQt6.QtGui import QDrag, QColor, QPixmap, QIcon, QBrush
 
 from src.model.library import LibraryManager
+from src.gui.items import TYPE_COLORS
+
+# Match colors from items.py
+SIDEBAR_COLORS = {
+    'File':   QColor('#26A69A'),
+    'Edit':   QColor('#42A5F5'),
+    'Tools':  QColor('#FFA726'),
+    'Plot':   QColor('#AB47BC'),
+}
+
+def _resolve_color(step):
+    """Same color logic as NodeItem: type overrides category."""
+    step_type = step.get('type', 'process')
+    category = step.get('category', '')
+    return TYPE_COLORS.get(step_type, SIDEBAR_COLORS.get(category, QColor('#90A4AE')))
+
+def _color_icon(color, size=14):
+    """Create a small colored square icon."""
+    pixmap = QPixmap(size, size)
+    pixmap.fill(color)
+    return QIcon(pixmap)
 
 class Sidebar(QWidget):
     node_requested = pyqtSignal(object)
@@ -15,6 +36,7 @@ class Sidebar(QWidget):
         # Use DraggableTreeWidget for categorized list
         self.tree = DraggableTreeWidget()
         self.tree.setHeaderHidden(True)
+        self.tree.setIconSize(QSize(14, 14))
         self.tree.itemDoubleClicked.connect(self.on_item_double_clicked)
         layout.addWidget(self.tree)
         
@@ -31,12 +53,9 @@ class Sidebar(QWidget):
     def refresh_items(self):
         self.tree.clear()
         
-        # We'll build categories dynamically based on what's in the library
-        # plus a fixed order for known main menus
         known_menus = ["File", "Edit", "Tools", "Plot"]
         self.category_items = {}
         
-        # Helper to get or create root
         def get_root(name):
             if name not in self.category_items:
                 root = QTreeWidgetItem(self.tree)
@@ -44,29 +63,30 @@ class Sidebar(QWidget):
                 font = root.font(0)
                 font.setBold(True)
                 root.setFont(0, font)
+                # Color the category header text
+                color = SIDEBAR_COLORS.get(name, QColor('#666666'))
+                root.setForeground(0, QBrush(color.darker(110)))
                 self.category_items[name] = root
             return self.category_items[name]
 
-        # Pre-create known menus in order
         for menu in known_menus:
             get_root(menu)
             
         library = LibraryManager.instance()
         steps = library.get_all_steps()
-        
-        # Sort by name
         steps.sort(key=lambda x: x.get('name', ''))
         
         for step in steps:
-            # Use 'category' field if present, otherwise 'Other'
             category = step.get('category', 'Other')
-            
             parent_item = get_root(category)
             
             item = QTreeWidgetItem(parent_item)
             item.setText(0, step['name'])
             item.setData(0, Qt.ItemDataRole.UserRole, step)
             item.setToolTip(0, step.get('description', ''))
+            # Add colored icon matching node canvas color
+            color = _resolve_color(step)
+            item.setIcon(0, _color_icon(color))
         
         # Remove empty roots if we pre-created them but didn't use them (optional, 
         # but cleaner to keep them if we want to show structure, or remove if empty. 

@@ -1,0 +1,82 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "type": "input",
+            "function": "get_files",
+            "label": "Get File(s)",
+            "position": [
+                50,
+                100
+            ],
+            "parameters": {
+                "file_paths": []
+            }
+        },
+        {
+            "id": "2",
+            "type": "process",
+            "function": "pop_eegfiltnew",
+            "label": "FIR Filter",
+            "position": [
+                250,
+                100
+            ],
+            "parameters": {
+                "locutoff": "0.1",
+                "hicutoff": "30"
+            }
+        },
+        {
+            "id": "3",
+            "type": "process",
+            "function": "pop_epoch",
+            "label": "Epoch Data",
+            "position": [
+                450,
+                100
+            ],
+            "parameters": {}
+        },
+        {
+            "id": "4",
+            "type": "process",
+            "function": "pop_rmbase",
+            "label": "Baseline Removal",
+            "position": [
+                650,
+                100
+            ],
+            "parameters": {}
+        },
+        {
+            "id": "5",
+            "type": "output",
+            "function": "pop_saveset",
+            "label": "Save Dataset",
+            "position": [
+                850,
+                100
+            ],
+            "parameters": {}
+        }
+    ],
+    "edges": [
+        {
+            "source": "1",
+            "target": "2"
+        },
+        {
+            "source": "2",
+            "target": "3"
+        },
+        {
+            "source": "3",
+            "target": "4"
+        },
+        {
+            "source": "4",
+            "target": "5"
+        }
+    ]
+}

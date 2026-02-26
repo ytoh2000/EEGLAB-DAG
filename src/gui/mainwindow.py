@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QMainWindow, QSplitter, QWidget, QVBoxLayout, QToolBar, QFileDialog, QMessageBox
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QColor
 from PyQt6.QtCore import Qt
 from src.gui.canvas import CanvasView
 from src.gui.sidebar import Sidebar
@@ -57,11 +57,12 @@ class MainWindow(QMainWindow):
         self._create_actions()
         self._create_main_toolbar()
         
+        # Connect undo stack to unsaved changes tracking
+        self.canvas.undo_stack.indexChanged.connect(self.on_pipeline_changed)
+        
         self.update_title()
 
     def _create_main_toolbar(self):
-        # Remove existing menu bar if any (default QMainWindow has one, we just don't populate it)
-        # Create Main Toolbar with Icons
         toolbar = QToolBar("Main Toolbar")
         toolbar.setMovable(False)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
@@ -73,9 +74,28 @@ class MainWindow(QMainWindow):
         self.open_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
         toolbar.addAction(self.open_action)
         
+        # New from Template
+        template_icon = style.standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder)
+        self.template_action = QAction(template_icon, "New from Template", self)
+        self.template_action.setToolTip("Start from a pipeline template")
+        self.template_action.triggered.connect(self.new_from_template)
+        toolbar.addAction(self.template_action)
+        
         # Save
         self.save_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         toolbar.addAction(self.save_action)
+        
+        toolbar.addSeparator()
+        
+        # Undo
+        undo_icon = style.standardIcon(QStyle.StandardPixmap.SP_ArrowBack)
+        self.undo_action.setIcon(undo_icon)
+        toolbar.addAction(self.undo_action)
+        
+        # Redo
+        redo_icon = style.standardIcon(QStyle.StandardPixmap.SP_ArrowForward)
+        self.redo_action.setIcon(redo_icon)
+        toolbar.addAction(self.redo_action)
         
         toolbar.addSeparator()
         
@@ -94,6 +114,91 @@ class MainWindow(QMainWindow):
         self.export_action.setToolTip("Export Job File Only")
         self.export_action.triggered.connect(self.export_job)
         toolbar.addAction(self.export_action)
+
+        toolbar.addSeparator()
+
+        # Fit to View
+        fit_icon = style.standardIcon(QStyle.StandardPixmap.SP_TitleBarMaxButton)
+        self.fit_action = QAction(fit_icon, "Fit to View", self)
+        self.fit_action.setToolTip("Fit to View (Ctrl+0)")
+        self.fit_action.setShortcut("Ctrl+0")
+        self.fit_action.triggered.connect(self.canvas.fit_to_view)
+        toolbar.addAction(self.fit_action)
+        
+        # Reset Zoom
+        reset_icon = style.standardIcon(QStyle.StandardPixmap.SP_BrowserReload)
+        self.reset_zoom_action = QAction(reset_icon, "Reset Zoom", self)
+        self.reset_zoom_action.setToolTip("Reset Zoom (Ctrl+=)")
+        self.reset_zoom_action.setShortcut("Ctrl+=")
+        self.reset_zoom_action.triggered.connect(self.canvas.reset_zoom)
+        toolbar.addAction(self.reset_zoom_action)
+
+        toolbar.addSeparator()
+
+        # Theme Toggle
+        self.theme_action = QAction("🌙 Dark Mode", self)
+        self.theme_action.setToolTip("Toggle Dark/Light Mode")
+        self.theme_action.triggered.connect(self.toggle_theme)
+        toolbar.addAction(self.theme_action)
+
+        toolbar.addSeparator()
+
+        # Import from Paper (LLM)
+        paper_icon = style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView)
+        self.paper_action = QAction(paper_icon, "📄 Import from Paper", self)
+        self.paper_action.setToolTip("Build pipeline from a research paper using AI")
+        self.paper_action.triggered.connect(self.import_from_paper)
+        toolbar.addAction(self.paper_action)
+
+    def import_from_paper(self):
+        from src.llm.dialog import PaperImportDialog
+        dialog = PaperImportDialog(self)
+        dialog.pipeline_ready.connect(self._on_paper_pipeline_ready)
+        dialog.exec()
+    
+    def _on_paper_pipeline_ready(self, pipeline, warnings, reasoning):
+        self.canvas.from_pipeline(pipeline)
+        self.current_file = None
+        self.unsaved_changes = True
+        self.update_title()
+
+    def toggle_theme(self):
+        from src.gui.theme import ThemeManager
+        from PyQt6.QtWidgets import QApplication
+        new_theme = ThemeManager.toggle(QApplication.instance())
+        if new_theme == 'dark':
+            self.theme_action.setText("☀️ Light Mode")
+            self.canvas.setBackgroundBrush(QColor('#1e1e1e'))
+        else:
+            self.theme_action.setText("🌙 Dark Mode")
+            self.canvas.setBackgroundBrush(Qt.GlobalColor.white)
+
+    def new_from_template(self):
+        if not self.prompt_save_if_needed():
+            return
+        import os, sys
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+            template_dir = os.path.abspath(os.path.join(base_dir, '..', '..', '..', 'library', 'pipelines'))
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            template_dir = os.path.abspath(os.path.join(base_dir, '..', '..', 'library', 'pipelines'))
+        
+        if not os.path.isdir(template_dir):
+            QMessageBox.warning(self, "No Templates", f"Template directory not found:\n{template_dir}")
+            return
+        
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Pipeline Template", template_dir, "JSON Files (*.json)")
+        if filename:
+            try:
+                from src.model.pipeline import Pipeline
+                pipeline = Pipeline.load(filename)
+                self.canvas.from_pipeline(pipeline)
+                self.current_file = None  # Don't associate with template path
+                self.unsaved_changes = True
+                self.update_title()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not load template: {e}")
 
     def _create_cwd_widget(self):
         from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QSizePolicy, QHBoxLayout
@@ -144,7 +249,7 @@ class MainWindow(QMainWindow):
              self.cwd_edit.setText(os.getcwd()) # Revert
 
     def _create_actions(self):
-        self.save_action = QAction("Save", self) # Removed & accelerator for icon toolbar, or keep it
+        self.save_action = QAction("Save", self)
         self.save_action.setToolTip("Save Pipeline (Ctrl+S)")
         self.save_action.setShortcut("Ctrl+S")
         self.save_action.triggered.connect(self.save_file)
@@ -153,6 +258,16 @@ class MainWindow(QMainWindow):
         self.open_action.setToolTip("Open Pipeline (Ctrl+O)")
         self.open_action.setShortcut("Ctrl+O")
         self.open_action.triggered.connect(self.open_file)
+        
+        self.undo_action = QAction("Undo", self)
+        self.undo_action.setToolTip("Undo (Ctrl+Z)")
+        self.undo_action.setShortcut("Ctrl+Z")
+        self.undo_action.triggered.connect(lambda: self.canvas.undo_stack.undo())
+        
+        self.redo_action = QAction("Redo", self)
+        self.redo_action.setToolTip("Redo (Ctrl+Shift+Z)")
+        self.redo_action.setShortcut("Ctrl+Shift+Z")
+        self.redo_action.triggered.connect(lambda: self.canvas.undo_stack.redo())
 
     def run_job(self):
         # 1. Prompt Save if needed
@@ -265,6 +380,9 @@ class MainWindow(QMainWindow):
             filename, _ = QFileDialog.getSaveFileName(self, "Save Pipeline", default_dir, "JSON Files (*.json)")
             
         if filename:
+            # Auto-append .json if user didn't type an extension
+            if not os.path.splitext(filename)[1]:
+                filename += '.json'
             try:
                 pipeline.save(filename)
                 self.current_file = filename

@@ -1,0 +1,256 @@
+{
+  "nodes": [
+    {
+      "id": "15",
+      "type": "output",
+      "function": "pop_saveset",
+      "label": "Save Data (.set)",
+      "position": [
+        930.0,
+        330.0
+      ],
+      "parameters": {
+        "filename": "processed_data.set",
+        "filepath": "."
+      },
+      "note": "LLM: Always end with a 'pop_saveset' node (type: output) as the last node."
+    },
+    {
+      "id": "14",
+      "type": "process",
+      "function": "",
+      "label": "Reject Bad Epochs",
+      "position": [
+        710.0,
+        330.0
+      ],
+      "parameters": {},
+      "note": "\u26a0 Placeholder: 'placeholder_reject_epochs' not in library\nPaper: 'EEG preprocessing included standard procedures: ... epoch rejection.' (Since this is listed in the general summary after ICA, it implies an additional epoch rejection step)."
+    },
+    {
+      "id": "13",
+      "type": "process",
+      "function": "",
+      "label": "Reject ICA Components",
+      "position": [
+        490.0,
+        330.0
+      ],
+      "parameters": {},
+      "note": "\u26a0 Placeholder: 'placeholder_reject_ica' not in library\nPaper: Table 2, Step 7: '... and identify those corresponding to artifacts (e.g., eye blinks and muscle activity). Reject the artifact components.' and 'The ICLabel plugin in EEGLAB was used to assist in component classification... Only components with \u226590% probability of non-brain origin were removed.'"
+    },
+    {
+      "id": "12",
+      "type": "process",
+      "function": "pop_runica",
+      "label": "Run ICA",
+      "position": [
+        270.0,
+        330.0
+      ],
+      "parameters": {},
+      "note": "LLM: Table 2, Step 7: 'Run ICA (independent component analysis) and reject components: Perform ICA to separate the EEG signal into independent components...'"
+    },
+    {
+      "id": "11",
+      "type": "process",
+      "function": "pop_rmbase",
+      "label": "Remove Baseline",
+      "position": [
+        50.0,
+        330.0
+      ],
+      "parameters": {
+        "timerange": "[-200 0]"
+      },
+      "note": "LLM: 'Baseline normalization was applied using the \u2212200 to 0 ms pre-stimulus interval.' and 'All ERP waveforms were baseline-corrected using the pre-stimulus interval (\u2212200 to 0 ms).'"
+    },
+    {
+      "id": "10",
+      "type": "process",
+      "function": "pop_epoch",
+      "label": "Epoch",
+      "position": [
+        930.0,
+        190.0
+      ],
+      "parameters": {
+        "timelim": "[-0.2 0.8]",
+        "types": "{'standard', 'oddball'}"
+      },
+      "note": "LLM: 'across epochs of \u2212200 to +800 ms around stimulus onset.' and the task involved 'standard tones, infrequent oddball tones'."
+    },
+    {
+      "id": "9",
+      "type": "process",
+      "function": "",
+      "label": "Interpolate Bad Channels",
+      "position": [
+        710.0,
+        190.0
+      ],
+      "parameters": {},
+      "note": "\u26a0 Placeholder: 'placeholder_interp' not in library\nPaper: 'noisy channels either removed or interpolated.' and 'bad channel interpolation' (from EEG preprocessing summary). (The 'pop_interp' node requires 'badchans' which is not provided, so a placeholder is used)."
+    },
+    {
+      "id": "8",
+      "type": "process",
+      "function": "pop_clean_rawdata",
+      "label": "Clean Rawdata",
+      "position": [
+        490.0,
+        190.0
+      ],
+      "parameters": {},
+      "note": "LLM: Table 2, Step 5: 'Identify/reject bad channels: Detect and mark bad channels (e.g., noisy and flat) for removal or interpolation.' and Table 2, Step 6: 'Reject large artifact time points: Identify and reject time periods with large artifacts, such as muscle movements or eye blinks, that significantly distort the EEG signal.' The 'pop_clean_rawdata' node performs these continuous data cleaning functions."
+    },
+    {
+      "id": "7",
+      "type": "process",
+      "function": "",
+      "label": "Examine Raw Data",
+      "position": [
+        270.0,
+        190.0
+      ],
+      "parameters": {},
+      "note": "\u26a0 Placeholder: 'placeholder_examine_raw' not in library\nPaper: Table 2, Step 4: 'Visually inspect the raw EEG data to identify potential noise, artifacts, or unusual signal patterns.'"
+    },
+    {
+      "id": "6",
+      "type": "process",
+      "function": "pop_eegfiltnew",
+      "label": "Filter",
+      "position": [
+        50.0,
+        190.0
+      ],
+      "parameters": {
+        "locutoff": "1"
+      },
+      "note": "LLM: Table 2, Step 3: 'Apply a high-pass filter (1 Hz) to remove slow drifts and trends in the EEG signal.'"
+    },
+    {
+      "id": "5",
+      "type": "process",
+      "function": "pop_reref",
+      "label": "Re-reference",
+      "position": [
+        930.0,
+        50.0
+      ],
+      "parameters": {
+        "ref": "[]"
+      },
+      "note": "LLM: Table 2, Step 2: 'Re-reference the EEG signals to a common average or specific reference channel to reduce noise and improve data quality.' and 're-referencing to a common average'."
+    },
+    {
+      "id": "4",
+      "type": "process",
+      "function": "",
+      "label": "Resample Data",
+      "position": [
+        710.0,
+        50.0
+      ],
+      "parameters": {},
+      "note": "\u26a0 Placeholder: 'placeholder_resample' not in library\nPaper: 'After recording, the EEG data were resampled and converted to EEGLAB format for further processing.' (The 'pop_resample' node requires 'freq' which is not provided, so a placeholder is used)."
+    },
+    {
+      "id": "3",
+      "type": "process",
+      "function": "pop_chanedit",
+      "label": "Edit Channel Locations",
+      "position": [
+        490.0,
+        50.0
+      ],
+      "parameters": {
+        "lookup": "standard-10-5-cap385.elp"
+      },
+      "note": "LLM: Table 2, Step 1: 'Import event markers and channel locations: ... load channel locations for better spatial interpretation.' and 'Standard 10\u201320 caps were employed'."
+    },
+    {
+      "id": "2",
+      "type": "input",
+      "function": "pop_fileio",
+      "label": "Import Data (FileIO)",
+      "position": [
+        270.0,
+        50.0
+      ],
+      "parameters": {},
+      "note": "LLM: The data originated from 'a publicly available EEG dataset on OpenNeuro' and was 'converted to EEGLAB format for further processing,' implying the need to import it into EEGLAB."
+    },
+    {
+      "id": "1",
+      "type": "input",
+      "function": "get_files",
+      "label": "Create File Lists",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "parameters": {},
+      "note": "LLM: Always start with a 'get_files' node (type: input) as the first node."
+    }
+  ],
+  "edges": [
+    {
+      "source": "5",
+      "target": "6"
+    },
+    {
+      "source": "14",
+      "target": "15"
+    },
+    {
+      "source": "13",
+      "target": "14"
+    },
+    {
+      "source": "12",
+      "target": "13"
+    },
+    {
+      "source": "11",
+      "target": "12"
+    },
+    {
+      "source": "10",
+      "target": "11"
+    },
+    {
+      "source": "9",
+      "target": "10"
+    },
+    {
+      "source": "8",
+      "target": "9"
+    },
+    {
+      "source": "7",
+      "target": "8"
+    },
+    {
+      "source": "6",
+      "target": "7"
+    },
+    {
+      "source": "4",
+      "target": "5"
+    },
+    {
+      "source": "3",
+      "target": "4"
+    },
+    {
+      "source": "2",
+      "target": "3"
+    },
+    {
+      "source": "1",
+      "target": "2"
+    }
+  ]
+}

@@ -59,5 +59,12 @@ class LibraryManager:
     def get_step(self, name):
         return self.steps.get(name)
 
+    def get_step_by_function(self, function_name):
+        """Look up a step definition by its EEGLAB function name (e.g. 'pop_eegfiltnew')."""
+        for step in self.steps.values():
+            if step.get('function') == function_name:
+                return step
+        return None
+
     def get_all_steps(self):
         return list(self.steps.values())

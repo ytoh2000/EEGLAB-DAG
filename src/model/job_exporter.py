@@ -31,19 +31,11 @@ class JobExporter:
             return False, "No source node found."
             
         # 4. Check if source is 'get_files' (primary input)
-        # We assume single primary input for now, or we look for the one with type 'input'
-        # based on our convention from library definitions
+        # Now we use the 'function' field stored directly on NodeData
         get_files_node = None
         for nid in sources:
             node = node_map[nid]
-            # We can check specific function name or type 'input' if we stored the definition
-            # But here we only have NodeData which has params. 
-            # We rely on the label or we need to access the library definition again.
-            # Assuming labels are unique-ish or we check the function name if we stored it?
-            # NodeData only has label. But label usually matches name.
-            # Ideally NodeData should store the 'function' identifier. 
-            # Let's assume the label "Get File(s)" or check if it has file_paths param
-            if "file_paths" in node.params:
+            if node.function == 'get_files' or 'file_paths' in node.params:
                 get_files_node = node
                 break
                 
@@ -82,26 +74,20 @@ class JobExporter:
         steps = []
         files = []
         
-        # Identify library definition to get function names
-        # We need the LibraryManager to look up definitions by label (or store function name in NodeData)
-        from src.model.library import LibraryManager
-        library = LibraryManager.instance()
-        
         for nid in ordered_ids:
             node = node_map[nid]
-            step_def = library.get_step(node.label) # This relies on label matching. 
-            # TODO: Robustness improvement: Store 'function' in NodeData.
+            func_name = node.function
             
-            if not step_def:
+            if not func_name:
                 continue
 
-            # Special case for source
-            if step_def.get('function') == 'get_files':
+            # Special case for source: extract file list
+            if func_name == 'get_files':
                 files = node.params.get('file_paths', [])
                 continue
                 
             step_info = {
-                "function": step_def.get('function'),
+                "function": func_name,
                 "label": node.label,
                 "parameters": node.params
             }

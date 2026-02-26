@@ -1,5 +1,5 @@
 {
-    "name": "Load Dataset",
+    "name": "Load Data (.set)",
     "function": "pop_loadset",
     "type": "process",
     "description": "Load an EEG dataset",

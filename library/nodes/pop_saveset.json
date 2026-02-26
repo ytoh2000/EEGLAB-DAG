@@ -1,5 +1,5 @@
 {
-    "name": "Save Dataset",
+    "name": "Save Data (.set)",
     "function": "pop_saveset",
     "type": "output",
     "category": "File",

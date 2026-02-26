@@ -1,11 +1,12 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog, QTabWidget, QTextEdit
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QDoubleValidator, QIntValidator
 
 class PropertiesDialog(QDialog):
-    def __init__(self, node_type, current_params, step_def, parent=None):
+    def __init__(self, node_type, current_params, step_def, parent=None, user_note=''):
         super().__init__(parent)
         self.setWindowTitle(f"Properties: {node_type}")
-        self.resize(400, 300)
+        self.resize(420, 350)
         
         self.node_type = node_type
         self.params = current_params.copy()
@@ -14,18 +15,27 @@ class PropertiesDialog(QDialog):
         
         layout = QVBoxLayout(self)
         
-        # Scrollable area could be added here if needed, but simple layout for now
-        form_widget = QWidget()
-        form_layout = QVBoxLayout(form_widget) # Changed to VBox to stack Required / Button / Optional
-        layout.addWidget(form_widget)
-        
         # dynamic form generation
-        self._generate_form(form_layout)
+        self._generate_form(layout)
         
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        # Note field
+        note_layout = QFormLayout()
+        note_label = QLabel("Note")
+        note_label.setToolTip("Add a personal annotation to this node")
+        self.note_edit = QTextEdit()
+        self.note_edit.setPlainText(user_note)
+        self.note_edit.setPlaceholderText("Add a note…")
+        self.note_edit.setMaximumHeight(70)
+        note_layout.addRow(note_label, self.note_edit)
+        layout.addLayout(note_layout)
+        
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+        
+        # Initial validation check
+        self._validate_all()
         
     def _generate_form(self, layout):
         inputs_def = self.step_def.get('inputs', [])
@@ -46,47 +56,37 @@ class PropertiesDialog(QDialog):
             else:
                 optional_inputs.append(inp)
 
-        # 1. Required Parameters
-        if required_inputs:
-            req_group = QWidget()
-            req_layout = QFormLayout(req_group)
-            req_layout.setContentsMargins(0, 0, 0, 0)
-            layout.addWidget(req_group)
+        # If there are optional params, use tabs; otherwise just a flat form
+        if optional_inputs:
+            tabs = QTabWidget()
+            layout.addWidget(tabs)
             
+            # Required tab
+            req_widget = QWidget()
+            req_layout = QFormLayout(req_widget)
+            req_layout.setContentsMargins(8, 8, 8, 8)
+            if required_inputs:
+                for inp in required_inputs:
+                    self._create_input_widget(inp, req_layout)
+            else:
+                req_layout.addRow(QLabel("No required parameters."))
+            tabs.addTab(req_widget, "Required")
+            
+            # Advanced tab
+            adv_widget = QWidget()
+            adv_layout = QFormLayout(adv_widget)
+            adv_layout.setContentsMargins(8, 8, 8, 8)
+            for inp in optional_inputs:
+                self._create_input_widget(inp, adv_layout)
+            tabs.addTab(adv_widget, "Advanced")
+        else:
+            # No optional params — flat form
+            req_widget = QWidget()
+            req_layout = QFormLayout(req_widget)
+            req_layout.setContentsMargins(0, 0, 0, 0)
             for inp in required_inputs:
                 self._create_input_widget(inp, req_layout)
-
-        # 2. Optional Parameters (Collapsible)
-        if optional_inputs:
-            from PyQt6.QtWidgets import QPushButton, QFrame
-            
-            self.toggle_btn = QPushButton("Show Advanced Options")
-            self.toggle_btn.setCheckable(True)
-            self.toggle_btn.setChecked(False)
-            self.toggle_btn.clicked.connect(self._toggle_optional)
-            layout.addWidget(self.toggle_btn)
-            
-            self.optional_container = QWidget()
-            self.optional_container.setVisible(False)
-            opt_layout = QFormLayout(self.optional_container)
-            opt_layout.setContentsMargins(0, 5, 0, 0)
-            
-            # Add a visual frame/border
-            frame = QFrame()
-            frame.setFrameShape(QFrame.Shape.StyledPanel)
-            frame_layout = QVBoxLayout(frame)
-            frame_layout.addWidget(self.optional_container)
-            layout.addWidget(frame)
-            
-            for inp in optional_inputs:
-                self._create_input_widget(inp, opt_layout)
-
-    def _toggle_optional(self):
-        visible = self.toggle_btn.isChecked()
-        self.optional_container.setVisible(visible)
-        self.toggle_btn.setText("Hide Advanced Options" if visible else "Show Advanced Options")
-        # Resize dialog to fit content
-        # self.adjustSize() 
+            layout.addWidget(req_widget)
 
     def _create_input_widget(self, inp, layout):
         name = inp.get('name')
@@ -146,6 +146,14 @@ class PropertiesDialog(QDialog):
             display_val = val if not is_off else default
             widget = QLineEdit(str(display_val) if display_val is not None else "")
             widget.setPlaceholderText(str(default) if default is not None else "")
+            
+            # Add validators for numeric types
+            if inp_type == 'float':
+                widget.setValidator(QDoubleValidator())
+                widget.textChanged.connect(self._validate_all)
+            elif inp_type == 'int':
+                widget.setValidator(QIntValidator())
+                widget.textChanged.connect(self._validate_all)
         
         widget.setToolTip(desc)
 
@@ -201,6 +209,29 @@ class PropertiesDialog(QDialog):
                 new_params[name] = widget.get_files()
                 
         return new_params
+
+    def _validate_all(self):
+        """Check all validated fields; disable OK and highlight invalid ones."""
+        all_valid = True
+        for name, data in self.inputs.items():
+            widget = data['widget']
+            if isinstance(widget, QLineEdit) and widget.validator():
+                # Skip validation for disabled optional fields
+                if data.get('can_disable') and data.get('checkbox') and not data['checkbox'].isChecked():
+                    widget.setStyleSheet('')
+                    continue
+                text = widget.text()
+                if text == '':
+                    # Empty is ok (will use default)
+                    widget.setStyleSheet('')
+                    continue
+                state = widget.validator().validate(text, 0)[0]
+                if state != QDoubleValidator.State.Acceptable:
+                    widget.setStyleSheet('QLineEdit { border: 2px solid #EF5350; }')
+                    all_valid = False
+                else:
+                    widget.setStyleSheet('QLineEdit { border: 1px solid #66BB6A; }')
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(all_valid)
 
 from PyQt6.QtWidgets import QPushButton, QTextEdit
 import os
