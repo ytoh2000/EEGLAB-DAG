@@ -1,12 +1,12 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog, QTabWidget, QTextEdit
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QDoubleValidator, QIntValidator
+from PyQt6.QtGui import QDoubleValidator, QIntValidator, QFont
 
 class PropertiesDialog(QDialog):
     def __init__(self, node_type, current_params, step_def, parent=None, user_note=''):
         super().__init__(parent)
         self.setWindowTitle(f"Properties: {node_type}")
-        self.resize(420, 350)
+        self.resize(600, 400)
         
         self.node_type = node_type
         self.params = current_params.copy()
@@ -39,10 +39,6 @@ class PropertiesDialog(QDialog):
         
     def _generate_form(self, layout):
         inputs_def = self.step_def.get('inputs', [])
-        
-        if not inputs_def:
-            layout.addWidget(QLabel("No parameters available."))
-            return
 
         required_inputs = []
         optional_inputs = []
@@ -56,37 +52,48 @@ class PropertiesDialog(QDialog):
             else:
                 optional_inputs.append(inp)
 
-        # If there are optional params, use tabs; otherwise just a flat form
+        # Always use a tab widget so the Help tab is accessible
+        tabs = QTabWidget()
+        layout.addWidget(tabs)
+        self._tabs = tabs
+
+        # Required tab
+        req_widget = QWidget()
+        req_layout = QFormLayout(req_widget)
+        req_layout.setContentsMargins(8, 8, 8, 8)
+        if required_inputs:
+            for inp in required_inputs:
+                self._create_input_widget(inp, req_layout)
+        else:
+            req_layout.addRow(QLabel("No required parameters."))
+        tabs.addTab(req_widget, "Required")
+
+        # Advanced tab (only if there are optional params)
         if optional_inputs:
-            tabs = QTabWidget()
-            layout.addWidget(tabs)
-            
-            # Required tab
-            req_widget = QWidget()
-            req_layout = QFormLayout(req_widget)
-            req_layout.setContentsMargins(8, 8, 8, 8)
-            if required_inputs:
-                for inp in required_inputs:
-                    self._create_input_widget(inp, req_layout)
-            else:
-                req_layout.addRow(QLabel("No required parameters."))
-            tabs.addTab(req_widget, "Required")
-            
-            # Advanced tab
             adv_widget = QWidget()
             adv_layout = QFormLayout(adv_widget)
             adv_layout.setContentsMargins(8, 8, 8, 8)
             for inp in optional_inputs:
                 self._create_input_widget(inp, adv_layout)
             tabs.addTab(adv_widget, "Advanced")
+
+        # Help tab
+        help_widget = QWidget()
+        help_layout = QVBoxLayout(help_widget)
+        help_layout.setContentsMargins(8, 8, 8, 8)
+
+        help_text = self.step_def.get('help_text', '')
+        help_display = QTextEdit()
+        help_display.setReadOnly(True)
+
+        if help_text:
+            help_display.setFont(QFont('Consolas', 9))
+            help_display.setPlainText(help_text)
         else:
-            # No optional params — flat form
-            req_widget = QWidget()
-            req_layout = QFormLayout(req_widget)
-            req_layout.setContentsMargins(0, 0, 0, 0)
-            for inp in required_inputs:
-                self._create_input_widget(inp, req_layout)
-            layout.addWidget(req_widget)
+            help_display.setPlainText('Not available')
+
+        help_layout.addWidget(help_display)
+        tabs.addTab(help_widget, "Help")
 
     def _create_input_widget(self, inp, layout):
         name = inp.get('name')

@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QTreeWidget, QTreeWidgetItem
-from PyQt6.QtCore import Qt, QMimeData, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, QMimeData, pyqtSignal, QSize, QTimer
 from PyQt6.QtGui import QDrag, QColor, QPixmap, QIcon, QBrush
 
 from src.model.library import LibraryManager
@@ -17,7 +17,7 @@ def _resolve_color(step):
     """Same color logic as NodeItem: type overrides category."""
     step_type = step.get('type', 'process')
     category = step.get('category', '')
-    return TYPE_COLORS.get(step_type, SIDEBAR_COLORS.get(category, QColor('#90A4AE')))
+    return TYPE_COLORS.get(step_type, SIDEBAR_COLORS.get(category, QColor('#607D8B')))
 
 def _color_icon(color, size=14):
     """Create a small colored square icon."""
@@ -37,7 +37,7 @@ class Sidebar(QWidget):
         self.tree = DraggableTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.setIconSize(QSize(14, 14))
-        self.tree.itemDoubleClicked.connect(self.on_item_double_clicked)
+        self.tree.itemDoubleClicked.connect(self._on_double_click)
         layout.addWidget(self.tree)
         
         # Categories mapping: Display Name -> [internal types]
@@ -64,8 +64,8 @@ class Sidebar(QWidget):
                 font.setBold(True)
                 root.setFont(0, font)
                 # Color the category header text
-                color = SIDEBAR_COLORS.get(name, QColor('#666666'))
-                root.setForeground(0, QBrush(color.darker(110)))
+                color = SIDEBAR_COLORS.get(name, QColor('#444444'))
+                root.setForeground(0, QBrush(color))
                 self.category_items[name] = root
             return self.category_items[name]
 
@@ -105,11 +105,28 @@ class Sidebar(QWidget):
 
         self.tree.expandAll()
 
-    def on_item_double_clicked(self, item, column):
-        # Only handle leaf nodes (definitions)
+    def _on_double_click(self, item, column):
+        """Defer node creation so a drag-start can cancel it."""
         step_def = item.data(0, Qt.ItemDataRole.UserRole)
-        if step_def:
-            self.node_requested.emit(step_def)
+        if not step_def:
+            return
+        self._pending_step = step_def
+        self._dbl_timer = QTimer(self)
+        self._dbl_timer.setSingleShot(True)
+        self._dbl_timer.timeout.connect(self._emit_pending)
+        self._dbl_timer.start(150)  # ms — short enough to feel instant
+
+    def _emit_pending(self):
+        """Emit the deferred node creation if not cancelled by a drag."""
+        if self._pending_step:
+            self.node_requested.emit(self._pending_step)
+            self._pending_step = None
+
+    def cancel_pending_double_click(self):
+        """Called by DraggableTreeWidget.startDrag to suppress the double-click node."""
+        if hasattr(self, '_dbl_timer') and self._dbl_timer.isActive():
+            self._dbl_timer.stop()
+        self._pending_step = None
 
 class DraggableTreeWidget(QTreeWidget):
     def __init__(self, parent=None):
@@ -123,10 +140,14 @@ class DraggableTreeWidget(QTreeWidget):
             return
             
         # Only allow dragging leaf nodes (those with step definitions)
-        # Checking if it has user data is a good way
         step_def = item.data(0, Qt.ItemDataRole.UserRole)
         if not step_def:
             return
+
+        # Cancel any pending double-click node creation
+        sidebar = self.parent()
+        if hasattr(sidebar, 'cancel_pending_double_click'):
+            sidebar.cancel_pending_double_click()
             
         mime_data = QMimeData()
         name = item.text(0)

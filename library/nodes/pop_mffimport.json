@@ -50,5 +50,6 @@
             "type": "dataset",
             "description": "Imported EEG structure"
         }
-    ]
+    ],
+    "help_text": "pop_mffimport - import MFF file to EEGLAB structure. Note that events\n                in MFF files are very rich and that you need to specify\n                which field may contain the information for EEGLAB to\n                extract events. This is the purpose of the second input\n                \"typefield\" to that function.\n\nUsage:\n  EEG = pop_mffimport; % pop up menu to select file\n  EEG = pop_mffimport(mffFile, typefield); % import file\n\nInput:\n mffFile - filename/foldername for the MFF file (MFF file/folder must\n           already exist)\n typefield - [string or cell] MFF field(s) to use for the type field. The\n           default is the code field of the MFF file. If several fields\n           are provided, the fields are concatenated to create the EEGLAB\n           type field.\n savedat - [0|1] automatically save imported dataset\n correctevents - [0|1] automatically correct events\n\nOutput:\n EEG     - EEGLAB structure"
 }

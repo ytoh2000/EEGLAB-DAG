@@ -40,5 +40,6 @@
             "type": "dataset",
             "description": "EEG structure with interpolated channels"
         }
-    ]
+    ],
+    "help_text": "pop_interp() - interpolate data channels\n\nUsage: EEGOUT = pop_interp(EEG, badchans, method);\n\nInputs: \n    EEG      - EEGLAB dataset\n    badchans - [integer array] indices of channels to interpolate.\n               For instance, these channels might be bad.\n               [chanlocs structure] channel location structure containing\n               either locations of channels to interpolate or a full\n               channel structure (missing channels in the current \n               dataset are interpolated).\n    method   - [string] method used for interpolation (default is 'spherical').\n               'invdist'/'v4' uses inverse distance on the scalp\n               'spherical' uses superfast spherical interpolation. \n               'spacetime' uses griddata3 to interpolate both in space \n               and time (very slow and cannot be interupted).\nOutput: \n    EEGOUT   - data set with bad electrode data replaced by\n               interpolated data\n\nAuthor: Arnaud Delorme, CERCO, CNRS, 2009-"
 }

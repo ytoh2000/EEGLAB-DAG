@@ -426,7 +426,7 @@ class CanvasView(QGraphicsView):
                     else:
                         node.params[inp['name']] = None
             
-            # Remove from scene since AddNodeCommand.redo() will add it
+            node.refresh_tooltip()
             self.undo_stack.push(AddNodeCommand(self, node))
             event.accept()
 
@@ -455,6 +455,7 @@ class CanvasView(QGraphicsView):
                 else:
                     node.params[inp['name']] = None 
         
+        node.refresh_tooltip()
         self.undo_stack.push(AddNodeCommand(self, node))
 
     def to_pipeline(self):
@@ -501,6 +502,7 @@ class CanvasView(QGraphicsView):
             item = NodeItem(node_data.id, node_data.label, node_data.pos[0], node_data.pos[1], step_def=step_def)
             item.params = node_data.params
             item.user_note = node_data.note
+            item.refresh_tooltip()
             self.scene.addItem(item)
             node_db[node_data.id] = item
             

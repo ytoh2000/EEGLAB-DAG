@@ -15,7 +15,7 @@ TYPE_COLORS = {
     'input':         QColor('#66BB6A'),  # Green
     'output':        QColor('#EF5350'),  # Red
     'visualization': QColor('#AB47BC'),  # Purple
-    'placeholder':   QColor('#9E9E9E'),  # Gray — unknown/unavailable
+    'placeholder':   QColor('#757575'),  # Gray — unknown/unavailable
 }
 
 HEADER_HEIGHT = 26
@@ -37,7 +37,7 @@ class NodeItem(QGraphicsItem):
         self.step_type = self.step_def.get('type', 'process')
         category = self.step_def.get('category', '')
         self.node_color = TYPE_COLORS.get(self.step_type,
-                          CATEGORY_COLORS.get(category, QColor('#90A4AE')))
+                          CATEGORY_COLORS.get(category, QColor('#607D8B')))
         
         # Data & Edges (Must init before setPos, which triggers itemChange)
         self.params = {}
@@ -58,6 +58,9 @@ class NodeItem(QGraphicsItem):
         # Determine port visibility
         self.has_input = self.step_type != 'input'
         self.has_output = self.step_type != 'output'
+
+        self.setAcceptHoverEvents(True)
+        self.refresh_tooltip()
 
     def boundingRect(self):
         padding = 45
@@ -169,6 +172,34 @@ class NodeItem(QGraphicsItem):
     def remove_edge(self, edge):
         if edge in self.edges:
             self.edges.remove(edge)
+
+    # ── Tooltip ────────────────────────────────────────────────────
+    def refresh_tooltip(self):
+        """Rebuild and apply the tooltip from current params."""
+        self.setToolTip(self._build_tooltip())
+
+    def _build_tooltip(self):
+        """Format node parameters into a readable tooltip string."""
+        # Identify dataset-type input names to skip (e.g. 'EEG')
+        skip_names = set()
+        for inp in self.step_def.get('inputs', []):
+            if inp.get('type') == 'dataset':
+                skip_names.add(inp['name'])
+
+        lines = [f"⚙  {self.label_text}"]
+        has_params = False
+        for key, value in self.params.items():
+            if key in skip_names:
+                continue
+            if value is None or value == '' or value == []:
+                continue
+            has_params = True
+            lines.append(f"  {key}: {value}")
+
+        if not has_params:
+            lines.append("  (no parameters configured)")
+
+        return '\n'.join(lines)
 
 class EdgeItem(QGraphicsPathItem):
     def __init__(self, source_node, target_node):

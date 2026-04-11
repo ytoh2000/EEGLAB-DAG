@@ -38,5 +38,6 @@
             "type": "dataset",
             "description": "Loaded EEG structure"
         }
-    ]
+    ],
+    "help_text": "pop_loadset() - load an EEG dataset. If no arguments, pop up an input window.\n\nUsage:\n  >> EEGOUT = pop_loadset; % pop up window to input arguments\n  >> EEGOUT = pop_loadset( 'key1', 'val1', 'key2', 'val2', ...);\n  >> EEGOUT = pop_loadset( filename, filepath); % old calling format\n\nOptional inputs:\n  'filename'  - [string] dataset filename. Default pops up a graphical\n                interface to browse for a data file.\n  'filepath'  - [string] dataset filepath. Default is current folder. \n  'loadmode'  - ['all', 'info', integer] 'all' -> load the data and\n                the dataset structure. 'info' -> load only the dataset \n                structure but not the actual data. [integer] ->  load only \n                a specific channel. This is efficient when data is stored \n                in a separate '.dat' file in which individual channels \n                may be loaded independently of each other. {default: 'all'}\n  'eeg'       - [EEG structure] reload current dataset\nNote:\n      Multiple filenames and filepaths may be specified. If more than one,\n      the output EEG variable will be an array of EEG structures.\nOutput\n  EEGOUT - EEG dataset structure or array of structures\n\nAuthor: Arnaud Delorme, CNL / Salk Institute, 2001; SCCN/INC/UCSD, 2002-\n\nSee also: eeglab(), pop_saveset()"
 }

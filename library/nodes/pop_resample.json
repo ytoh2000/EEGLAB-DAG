@@ -40,5 +40,6 @@
             "type": "dataset",
             "description": "Resampled EEG structure"
         }
-    ]
+    ],
+    "help_text": "pop_resample() - resample dataset (pop up window).\n\nUsage:\n  >> [OUTEEG] = pop_resample( INEEG ); % pop up interactive window\n  >> [OUTEEG] = pop_resample( INEEG, freq);\n  >> [OUTEEG] = pop_resample( INEEG, freq, fc, df);\n\nGraphical interface:\n  The edit box entitled \"New sampling rate\" contains the frequency in\n  Hz for resampling the data. Entering a value in this box  is the same \n  as providing it in the 'freq' input from the command line.\n\nInputs:\n  INEEG      - input dataset\n  freq       - frequency to resample (Hz)  \n\nOptional inputs:\n  fc         - anti-aliasing filter cutoff (pi rad / sample)\n               {default 0.9}\n  df         - anti-aliasing filter transition band width (pi rad /\n               sample) {default 0.2}\n\nOutputs:\n  OUTEEG     - output dataset\n\nAuthor: Arnaud Delorme, CNL/Salk Institute, 2001\n\nNote: uses the resample() function from the signal processing toolbox\n      if present. Otherwise use griddata interpolation method (it should be\n      reprogrammed using spline interpolation for speed up).\n\nSee also: resample(), eeglab()"
 }

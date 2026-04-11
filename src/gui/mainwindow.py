@@ -25,7 +25,6 @@ class MainWindow(QMainWindow):
         
         # Sidebar (Left)
         self.sidebar = Sidebar()
-        self.sidebar.setStyleSheet("background-color: #f0f0f0; min-width: 200px;")
         self.splitter.addWidget(self.sidebar)
         
         # Right Side Container (CWD Bar + Canvas)
@@ -65,6 +64,7 @@ class MainWindow(QMainWindow):
     def _create_main_toolbar(self):
         toolbar = QToolBar("Main Toolbar")
         toolbar.setMovable(False)
+        toolbar.setIconSize(__import__('PyQt6.QtCore', fromlist=['QSize']).QSize(20, 20))
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
         
         from PyQt6.QtWidgets import QStyle
@@ -135,11 +135,7 @@ class MainWindow(QMainWindow):
 
         toolbar.addSeparator()
 
-        # Theme Toggle
-        self.theme_action = QAction("🌙 Dark Mode", self)
-        self.theme_action.setToolTip("Toggle Dark/Light Mode")
-        self.theme_action.triggered.connect(self.toggle_theme)
-        toolbar.addAction(self.theme_action)
+
 
         toolbar.addSeparator()
 
@@ -162,16 +158,6 @@ class MainWindow(QMainWindow):
         self.unsaved_changes = True
         self.update_title()
 
-    def toggle_theme(self):
-        from src.gui.theme import ThemeManager
-        from PyQt6.QtWidgets import QApplication
-        new_theme = ThemeManager.toggle(QApplication.instance())
-        if new_theme == 'dark':
-            self.theme_action.setText("☀️ Light Mode")
-            self.canvas.setBackgroundBrush(QColor('#1e1e1e'))
-        else:
-            self.theme_action.setText("🌙 Dark Mode")
-            self.canvas.setBackgroundBrush(Qt.GlobalColor.white)
 
     def new_from_template(self):
         if not self.prompt_save_if_needed():

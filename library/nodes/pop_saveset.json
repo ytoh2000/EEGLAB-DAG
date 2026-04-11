@@ -56,5 +56,6 @@
             "type": "dataset",
             "description": "Saved EEG structure"
         }
-    ]
+    ],
+    "help_text": "pop_saveset() - save one or more EEG dataset structures\n\nUsage:\n  >> pop_saveset( EEG ); % use an interactive pop-up window \n  >> EEG = pop_saveset( EEG, 'key', 'val', ...); % no pop-up\n                                             \nInputs:\n  EEG        - EEG dataset structure. May only contain one dataset.\n\nOptional inputs:\n  'filename' - [string] name of the file to save to\n  'filepath' - [string] path of the file to save to\n  'check'    - ['on'|'off'] perform extended syntax check. Default 'off'.\n  'savemode' - ['resave'|'onefile'|'twofiles'] 'resave' resave the \n               current dataset using the filename and path stored\n               in the dataset; 'onefile' saves the full EEG \n               structure in a Matlab '.set' file, 'twofiles' saves \n               the structure without the data in a Matlab '.set' file\n               and the transposed data in a binary float '.dat' file.\n               By default the option from the eeg_options.m file is \n               used.\n  'version' - ['6'|'7.3'] save Matlab file as version 6 or\n              '7.3' (default; as defined in eeg_option file).\n\nOutputs:\n  EEG        - saved dataset (after extensive syntax checks)\n  ALLEEG     - saved datasets (after extensive syntax checks)\n\nNote: An individual dataset should be saved with a '.set' file extension\n\nAuthor: Arnaud Delorme, CNL / Salk Institute, 2001\n\nSee also: pop_loadset(), eeglab()"
 }

@@ -155,11 +155,13 @@ class ChangeParamsCommand(QUndoCommand):
     def redo(self):
         self.node.params = dict(self.new_params)
         self.node.user_note = self.new_note
+        self.node.refresh_tooltip()
         self.node.update()
         self.canvas.pipeline_changed.emit()
 
     def undo(self):
         self.node.params = dict(self.old_params)
         self.node.user_note = self.old_note
+        self.node.refresh_tooltip()
         self.node.update()
         self.canvas.pipeline_changed.emit()

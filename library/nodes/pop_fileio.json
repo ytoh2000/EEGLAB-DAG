@@ -51,5 +51,6 @@
             "type": "dataset",
             "description": "Imported EEG structure"
         }
-    ]
+    ],
+    "help_text": "pop_fileio() - import data files into EEGLAB using FileIO \n\nUsage:\n  >> OUTEEG = pop_fileio; % pop up window\n  >> OUTEEG = pop_fileio( filename );\n\nInputs:\n  filename - [string] file name\n\nOptional inputs:\n  'channels'   - [integer array] list of channel indices\n  'samples'    - [min max] sample point limits for importing data. \n  'trials'     - [min max] trial's limit for importing data. \n  'memorymapped' - ['on'|'off'] import memory mapped file (useful if \n                 encountering memory errors). Default is 'off'.\n\nOutputs:\n  OUTEEG   - EEGLAB data structure\n\nAuthor: Arnaud Delorme, SCCN, INC, UCSD, 2008-\n\nNote: FILEIO toolbox must be installed. "
 }
