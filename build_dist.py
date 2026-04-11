@@ -47,8 +47,35 @@ def build():
         '--hidden-import=fitz',
         '--hidden-import=bs4',
         '--hidden-import=requests',
+        # Exclude large unused Qt modules to reduce size
+        '--exclude-module=PyQt6.QtWebEngineCore',
+        '--exclude-module=PyQt6.QtWebEngineWidgets',
+        '--exclude-module=PyQt6.QtWebEngine',
+        '--exclude-module=PyQt6.QtQuick',
+        '--exclude-module=PyQt6.QtQuickWidgets',
+        '--exclude-module=PyQt6.QtSql',
+        '--exclude-module=PyQt6.QtTest',
+        '--exclude-module=PyQt6.QtXml',
+        '--exclude-module=PyQt6.QtBluetooth',
+        '--exclude-module=PyQt6.QtNfc',
+        '--exclude-module=PyQt6.QtPositioning',
+        '--exclude-module=PyQt6.QtRemoteObjects',
+        '--exclude-module=PyQt6.QtSensors',
+        '--exclude-module=PyQt6.QtSerialPort',
+        '--exclude-module=PyQt6.QtWebChannel',
+        '--exclude-module=PyQt6.QtWebSockets',
         '--distpath', output_dir    # Output to bin/<os_key>
     ]
+    
+    # Check for UPX
+    upx_bin = shutil.which('upx')
+    if upx_bin:
+        print(f"UPX found at {upx_bin}. Binaries will be compressed.")
+        args.append('--upx-dir')
+        args.append(os.path.dirname(upx_bin))
+    else:
+        print("Warning: UPX not found. Binaries will not be compressed. Size may be larger.")
+        args.append('--noupx')
     
     # Add data files if needed (e.g., icons)
     # args.append('--add-data=src/gui/icons:src/gui/icons') # Example
