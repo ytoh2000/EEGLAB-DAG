@@ -5,8 +5,8 @@
 
 function pop_launch_dag()
     
-    % Determine the path to the plugin directory
-    plugin_path = fileparts(which('eegplugin_eeglab_dag'));
+    % Determine the path to the plugin/app directory
+    plugin_path = fileparts(mfilename('fullpath'));
     
     % 1. Try to find bundled executable (compiled with PyInstaller)
     if ispc
