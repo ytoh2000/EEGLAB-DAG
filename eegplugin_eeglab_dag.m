@@ -27,5 +27,10 @@ function eegplugin_eeglab_dag(fig, try_strings, catch_strings)
     % Calls run_pipeline()
     uimenu(menu, 'Label', 'Execute Job', ...
         'Callback', 'run_pipeline();');
+
+    % Menu Item 3: Tutorials
+    uimenu(menu, 'Label', 'Tutorials', ...
+        'Separator', 'on', ...
+        'Callback', ['if ispc, winopen(fullfile(''' plugin_path ''', ''tutorials'')); else, system([''open "'' fullfile(''' plugin_path ''', ''tutorials'') ''" & '']); end']);
         
 end

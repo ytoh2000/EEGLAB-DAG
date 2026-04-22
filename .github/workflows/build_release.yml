@@ -40,32 +40,49 @@ jobs:
         run: |
           python build_dist.py
 
-      - name: Upload Artifact
+      - name: Package Release
+        shell: bash
+        run: |
+          # Create a clean directory for packaging
+          PKG_DIR="EEGLAB-DAG"
+          mkdir -p $PKG_DIR/bin
+          mkdir -p $PKG_DIR/src
+          
+          # Copy only necessary files
+          cp -r bin/${{ matrix.artifact_name }} $PKG_DIR/bin/
+          cp -r library $PKG_DIR/
+          cp -r tutorials $PKG_DIR/
+          cp -r src/matlab $PKG_DIR/src/
+          cp *.m $PKG_DIR/
+          cp README.md $PKG_DIR/
+          
+          # Create ZIP
+          # Using ref_name for versioning (e.g., v1.0.0 or main)
+          ZIP_NAME="EEGLAB-DAG-${{ github.ref_name }}-${{ matrix.artifact_name }}.zip"
+          zip -r $ZIP_NAME $PKG_DIR
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload Zip Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: bin/${{ matrix.artifact_name }}
+          name: zip-${{ matrix.artifact_name }}
+          path: ${{ env.ZIP_NAME }}
 
   release:
     name: Create Release
     needs: build
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: bin
+          path: release_assets
+          pattern: zip-*
+          merge-multiple: true
 
-      - name: Zip Release
-        run: |
-          zip -ry EEGLAB-DAG-${{ github.ref_name }}.zip . -x ".git/*" ".github/*" ".venv/*" "__pycache__/*" "*.DS_Store"
-        
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: EEGLAB-DAG-${{ github.ref_name }}.zip
+          files: release_assets/*.zip
