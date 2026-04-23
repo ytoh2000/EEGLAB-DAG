@@ -30,21 +30,37 @@ class JobExporter:
         if not sources:
             return False, "No source node found."
             
-        # 4. Check if source is 'get_files' (primary input)
-        get_files_node = None
+        # 4. Check if source is 'get_files' or an importer (primary input)
+        source_node = None
         for nid in sources:
             node = node_map[nid]
-            if node.function == 'get_files' or 'file_paths' in node.params:
-                get_files_node = node
+            if node.function == 'get_files' or 'file_paths' in node.params or node.function in ['pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig']:
+                source_node = node
                 break
                 
-        if not get_files_node:
-            return False, "No 'Get File(s)' source node found. Please add a Get File(s) node to start."
+        if not source_node:
+            return False, "No data source node found. Please start with 'Get File(s)' or an Import node."
             
         # 5. Check if files are actually selected
-        files = get_files_node.params.get("file_paths", [])
+        import os
+        files = source_node.params.get("file_paths", [])
         if not files:
-            return False, "No files selected in 'Get File(s)' node."
+            if source_node.function == 'pop_loadset':
+                 f_name = source_node.params.get("filename", "")
+                 f_path = source_node.params.get("filepath", "")
+                 if f_name and f_path:
+                      files = [os.path.join(f_path, f_name)]
+                 elif f_name:
+                      files = [f_name]
+            elif source_node.function in ['pop_mffimport']:
+                 files = [source_node.params.get("mffFile", "")]
+            elif source_node.function in ['pop_fileio', 'pop_biosig']:
+                 files = [source_node.params.get("filename", "")]
+                 
+            files = [f for f in files if f]
+
+        if not files:
+            return False, "No files selected in the data source node."
             
         return True, ""
 
@@ -66,9 +82,34 @@ class JobExporter:
             
         ordered_ids = list(nx.topological_sort(G))
         
+        # Extract files from source
+        import os
+        sources = [n for n in G.nodes if G.in_degree(n) == 0]
+        source_node = None
+        for nid in sources:
+            node = node_map[nid]
+            if node.function == 'get_files' or 'file_paths' in node.params or node.function in ['pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig']:
+                source_node = node
+                break
+                
+        files = source_node.params.get("file_paths", [])
+        if not files:
+            if source_node.function == 'pop_loadset':
+                 f_name = source_node.params.get("filename", "")
+                 f_path = source_node.params.get("filepath", "")
+                 if f_name and f_path:
+                      files = [os.path.join(f_path, f_name)]
+                 elif f_name:
+                      files = [f_name]
+            elif source_node.function in ['pop_mffimport']:
+                 files = [source_node.params.get("mffFile", "")]
+            elif source_node.function in ['pop_fileio', 'pop_biosig']:
+                 files = [source_node.params.get("filename", "")]
+                 
+            files = [f for f in files if f]
+            
         # Build step list
         steps = []
-        files = []
         cumulative_suffix = ""
         
         from src.model.library import LibraryManager
@@ -81,9 +122,8 @@ class JobExporter:
             if not func_name:
                 continue
 
-            # Special case for source: extract file list
+            # Special case for source: get_files is just a data provider, skip it in steps
             if func_name == 'get_files':
-                files = node.params.get('file_paths', [])
                 continue
             
             # Suffix calculation

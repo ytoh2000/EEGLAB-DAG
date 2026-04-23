@@ -83,11 +83,31 @@ class PropertiesDialog(QDialog):
             param_layout.addRow(info_label)
             param_widget.setEnabled(False)
 
+        is_importer = self.step_def.get('function') in ['pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig']
+        if is_importer:
+            self.importer_files = self.params.get('file_paths', [])
+            select_btn = QPushButton("Select File(s)...")
+            select_btn.clicked.connect(self._on_select_importer_files)
+            param_layout.addRow(select_btn)
+
         if parameters:
             for inp in parameters:
                 self._create_input_widget(inp, param_layout)
         else:
             param_layout.addRow(QLabel("No parameters."))
+
+        is_saver = self.step_def.get('function') == 'pop_saveset'
+        if is_saver:
+            self.auto_suffix_cb = QCheckBox("Use automatic suffix-based filename")
+            self.auto_suffix_cb.setChecked(not bool(self.params.get('filename', '')))
+            self.auto_suffix_cb.toggled.connect(self._on_auto_suffix_toggled)
+            # Insert at the top of parameters
+            if is_importer:
+                param_layout.insertRow(1, self.auto_suffix_cb)
+            else:
+                param_layout.insertRow(0, self.auto_suffix_cb)
+            self._on_auto_suffix_toggled(self.auto_suffix_cb.isChecked())
+            
         tabs.addTab(param_widget, "Parameters")
 
         # Help tab
@@ -232,7 +252,53 @@ class PropertiesDialog(QDialog):
             elif isinstance(widget, FileListWidget):
                 new_params[name] = widget.get_files()
                 
+        if hasattr(self, 'importer_files') and self.importer_files:
+            new_params['file_paths'] = self.importer_files
+            
         return new_params
+
+    def _on_auto_suffix_toggled(self, checked):
+        if 'filename' in self.inputs:
+            widget = self.inputs['filename']['widget']
+            label = self.inputs['filename']['label']
+            if isinstance(widget, QLineEdit):
+                widget.setEnabled(not checked)
+                label.setEnabled(not checked)
+                if checked:
+                    widget.setText("")
+
+    def _on_select_importer_files(self):
+        import os
+        filter_str = "All Files (*)"
+        func = self.step_def.get('function')
+        if func == 'pop_loadset':
+            filter_str = "EEGLAB Dataset (*.set);;All Files (*)"
+        elif func == 'pop_mffimport':
+            filter_str = "MFF Files (*.mff);;All Files (*)"
+            
+        paths, _ = QFileDialog.getOpenFileNames(self, "Select Data Files", filter=filter_str)
+        if paths:
+            self.importer_files = paths
+            first_file = paths[0]
+            if func == 'pop_loadset':
+                if 'filename' in self.inputs:
+                    self.inputs['filename']['widget'].setText(os.path.basename(first_file))
+                if 'filepath' in self.inputs:
+                    # widget is FilePickerWidget, which has line_edit
+                    picker = self.inputs['filepath']['widget']
+                    if hasattr(picker, 'line_edit'):
+                        picker.line_edit.setText(os.path.dirname(first_file))
+            elif func == 'pop_mffimport':
+                if 'mffFile' in self.inputs:
+                    picker = self.inputs['mffFile']['widget']
+                    if hasattr(picker, 'line_edit'):
+                        picker.line_edit.setText(first_file)
+            elif func in ['pop_fileio', 'pop_biosig']:
+                if 'filename' in self.inputs:
+                    picker = self.inputs['filename']['widget']
+                    if hasattr(picker, 'line_edit'):
+                        picker.line_edit.setText(first_file)
+            self._validate_all()
 
     def _validate_all(self):
         """Check all validated fields; disable OK and highlight invalid ones."""
