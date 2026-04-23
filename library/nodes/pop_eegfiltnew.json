@@ -2,6 +2,7 @@
     "name": "Filter",
     "function": "pop_eegfiltnew",
     "type": "process",
+    "suffix": "BP",
     "description": "Filter data using Hamming windowed sinc FIR filter",
     "category": "Tools",
     "github_url": "https://github.com/sccn/eeglab/blob/master/plugins/firfilt1.6.2/pop_eegfiltnew.m",

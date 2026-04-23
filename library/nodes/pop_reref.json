@@ -2,6 +2,7 @@
     "name": "Re-reference",
     "function": "pop_reref",
     "type": "process",
+    "suffix": "REF",
     "description": "Convert an EEG dataset to average reference or to a new common reference channel.",
     "category": "Tools",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_reref.m",

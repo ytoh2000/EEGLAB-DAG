@@ -2,6 +2,7 @@
     "name": "Clean Rawdata",
     "function": "pop_clean_rawdata",
     "type": "process",
+    "suffix": "CLN",
     "description": "Clean raw EEG data using ASR (Artifact Subspace Reconstruction). To disable a method, use 'off' or -1.",
     "category": "Tools",
     "github_url": "https://github.com/sccn/clean_rawdata/blob/master/pop_clean_rawdata.m",

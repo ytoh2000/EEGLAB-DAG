@@ -2,6 +2,7 @@
     "name": "Interpolate Channels",
     "function": "pop_interp",
     "type": "process",
+    "suffix": "INT",
     "description": "Interpolate bad channels.",
     "category": "Tools",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_interp.m",

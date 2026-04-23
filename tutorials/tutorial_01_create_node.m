@@ -42,6 +42,11 @@ node.category = 'Tools';
 %    when you hover over the node in the editor.
 node.description = 'Applies a custom bandpass filter to the data.';
 
+% 6. suffix: This is a short code (e.g. "BP") that will be added to the 
+%    original filename when saving the output of this node. As data flows 
+%    through multiple nodes, these suffixes accumulate (e.g., NAME_BP_RS).
+node.suffix = 'MYF';
+
 %% Step 2: Define the Inputs (Parameters)
 % The inputs section defines what data goes into the node, and what 
 % settings (parameters) the user can tweak in the sidebar.

@@ -143,7 +143,7 @@ class MoveNodeCommand(QUndoCommand):
 class ChangeParamsCommand(QUndoCommand):
     """Undoable command for changing node parameters and/or note."""
 
-    def __init__(self, canvas, node_item, old_params, new_params, old_note='', new_note=''):
+    def __init__(self, canvas, node_item, old_params, new_params, old_note='', new_note='', old_save=False, new_save=False):
         super().__init__(f"Edit {node_item.label_text}")
         self.canvas = canvas
         self.node = node_item
@@ -151,10 +151,13 @@ class ChangeParamsCommand(QUndoCommand):
         self.new_params = dict(new_params)
         self.old_note = old_note
         self.new_note = new_note
+        self.old_save = old_save
+        self.new_save = new_save
 
     def redo(self):
         self.node.params = dict(self.new_params)
         self.node.user_note = self.new_note
+        self.node.save_output = self.new_save
         self.node.refresh_tooltip()
         self.node.update()
         self.canvas.pipeline_changed.emit()
@@ -162,6 +165,7 @@ class ChangeParamsCommand(QUndoCommand):
     def undo(self):
         self.node.params = dict(self.old_params)
         self.node.user_note = self.old_note
+        self.node.save_output = self.old_save
         self.node.refresh_tooltip()
         self.node.update()
         self.canvas.pipeline_changed.emit()

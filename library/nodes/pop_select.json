@@ -2,6 +2,7 @@
     "name": "Select Data",
     "function": "pop_select",
     "type": "process",
+    "suffix": "SEL",
     "description": "Select or remove data based on time, epochs, or channels.",
     "category": "Edit",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_select.m",

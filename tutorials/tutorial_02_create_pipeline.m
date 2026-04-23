@@ -44,6 +44,8 @@ node2.position = [250, 100];    % Placed further to the right (X = 250)
 node2.parameters = struct();
 node2.parameters.locutoff = '1';
 node2.parameters.hicutoff = '50';
+% We can also choose to save the output of this specific step!
+node2.save_output = true; 
 
 % --- Node 3: Clean Data ---
 node3 = struct();

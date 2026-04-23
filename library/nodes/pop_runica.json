@@ -2,6 +2,7 @@
     "name": "Run ICA",
     "function": "pop_runica",
     "type": "process",
+    "suffix": "ICA",
     "description": "Run an ICA decomposition of an EEG dataset",
     "category": "Tools",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_runica.m",

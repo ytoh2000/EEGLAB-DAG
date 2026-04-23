@@ -2,6 +2,7 @@
     "name": "Resample",
     "function": "pop_resample",
     "type": "process",
+    "suffix": "RS",
     "category": "Tools",
     "description": "Resample the dataset to a new frequency.",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_resample.m",

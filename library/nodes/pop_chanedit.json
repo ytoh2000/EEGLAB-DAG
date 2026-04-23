@@ -2,6 +2,7 @@
     "name": "Edit Channel Locations",
     "function": "pop_chanedit",
     "type": "process",
+    "suffix": "CH",
     "description": "Edit channel locations, supporting lookup of standard locations.",
     "category": "Edit",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_chanedit.m",

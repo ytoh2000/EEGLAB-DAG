@@ -2,6 +2,7 @@
     "name": "Epoch",
     "function": "pop_epoch",
     "type": "process",
+    "suffix": "EP",
     "description": "Convert continuous EEG to epoched data time-locked to events.",
     "category": "Tools",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_epoch.m",

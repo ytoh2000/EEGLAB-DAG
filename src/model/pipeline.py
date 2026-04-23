@@ -111,7 +111,7 @@ class NodeData:
         pos (tuple):    (x, y) position on the canvas.
         params (dict):  User-configured parameters for this node.
     """
-    def __init__(self, node_id, node_type, label, pos=(0,0), params=None, function='', note=''):
+    def __init__(self, node_id, node_type, label, pos=(0,0), params=None, function='', note='', save_output=False):
         self.id = node_id
         self.type = node_type
         self.function = function
@@ -119,6 +119,7 @@ class NodeData:
         self.pos = pos
         self.params = params or {}
         self.note = note
+        self.save_output = save_output
         
     def to_dict(self):
         d = {
@@ -131,6 +132,8 @@ class NodeData:
         }
         if self.note:
             d["note"] = self.note
+        if self.save_output:
+            d["save_output"] = True
         return d
 
     @classmethod
@@ -142,7 +145,8 @@ class NodeData:
             pos=data["position"],
             params=data["parameters"],
             function=data.get("function", ""),
-            note=data.get("note", "")
+            note=data.get("note", ""),
+            save_output=data.get("save_output", False)
         )
 
 class EdgeData:

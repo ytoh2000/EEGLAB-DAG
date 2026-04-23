@@ -326,14 +326,36 @@ class CanvasView(QGraphicsView):
             super().contextMenuEvent(event)
 
     def open_properties(self, item):
+        # Determine if we should disable parameters (linked to Create File Lists)
+        is_linked_to_get_files = False
+        if item.function_name in ('pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig'):
+            for edge in item.edges:
+                # If this node is the target and the source is 'get_files'
+                if edge.target_node == item and edge.source_node.function_name == 'get_files':
+                    is_linked_to_get_files = True
+                    break
+
+        # For Save Data nodes, we disable filename when in batch mode
+        # (Assuming batch mode if there's any 'get_files' node in the scene)
+        disabled_params = []
+        if item.function_name == 'pop_saveset':
+            has_get_files = any(n.function_name == 'get_files' for n in self.scene.items() if isinstance(n, NodeItem))
+            if has_get_files:
+                disabled_params = ['filename']
+
         old_params = dict(item.params)
         old_note = item.user_note
-        dialog = PropertiesDialog(item.label_text, item.params, item.step_def, self, user_note=item.user_note)
+        dialog = PropertiesDialog(item.label_text, item.params, item.step_def, self, 
+                                  user_note=item.user_note, 
+                                  readonly=is_linked_to_get_files,
+                                  disabled_params=disabled_params,
+                                  save_output=item.save_output)
         if dialog.exec():
             new_params = dialog.get_params()
             new_note = dialog.note_edit.toPlainText()
-            if new_params != old_params or new_note != old_note:
-                self.undo_stack.push(ChangeParamsCommand(self, item, old_params, new_params, old_note, new_note))
+            new_save = dialog.save_cb.isChecked() if dialog.save_cb else False
+            if new_params != old_params or new_note != old_note or new_save != item.save_output:
+                self.undo_stack.push(ChangeParamsCommand(self, item, old_params, new_params, old_note, new_note, item.save_output, new_save))
 
     def open_url(self, url):
         QDesktopServices.openUrl(QUrl(url))

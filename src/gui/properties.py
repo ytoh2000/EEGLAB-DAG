@@ -3,10 +3,13 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QIntValidator, QFont
 
 class PropertiesDialog(QDialog):
-    def __init__(self, node_type, current_params, step_def, parent=None, user_note=''):
+    def __init__(self, node_type, current_params, step_def, parent=None, user_note='', readonly=False, disabled_params=None, save_output=False):
         super().__init__(parent)
+        self.readonly = readonly
+        self.disabled_params = disabled_params or []
+        self.save_output = save_output
         self.setWindowTitle(f"Properties: {node_type}")
-        self.resize(600, 400)
+        self.resize(450, 500)
         
         self.node_type = node_type
         self.params = current_params.copy()
@@ -17,6 +20,19 @@ class PropertiesDialog(QDialog):
         
         # dynamic form generation
         self._generate_form(layout)
+        
+        # Save output option (only if node has dataset output and isn't already a save node)
+        self.save_cb = None
+        outputs = self.step_def.get('outputs', [])
+        has_dataset_output = any(o.get('type') == 'dataset' for o in outputs)
+        is_already_save_node = self.step_def.get('function') == 'pop_saveset'
+        
+        if has_dataset_output and not is_already_save_node:
+            self.save_cb = QCheckBox("Save output after this step")
+            self.save_cb.setChecked(self.save_output)
+            self.save_cb.setToolTip("Automatically save the EEG dataset to the output folder after this processing step.")
+            self.save_cb.setStyleSheet("margin-left: 5px; margin-top: 5px; margin-bottom: 5px; font-weight: bold; color: #2E7D32;")
+            layout.addWidget(self.save_cb)
         
         # Note field
         note_layout = QFormLayout()
@@ -40,42 +56,39 @@ class PropertiesDialog(QDialog):
     def _generate_form(self, layout):
         inputs_def = self.step_def.get('inputs', [])
 
-        required_inputs = []
-        optional_inputs = []
+        parameters = []
 
         for inp in inputs_def:
             # Skip implicit inputs like 'EEG'
             if inp.get('type') == 'dataset':
                 continue
-            if inp.get('required', False):
-                required_inputs.append(inp)
-            else:
-                optional_inputs.append(inp)
+            parameters.append(inp)
 
         # Always use a tab widget so the Help tab is accessible
         tabs = QTabWidget()
         layout.addWidget(tabs)
         self._tabs = tabs
 
-        # Required tab
-        req_widget = QWidget()
-        req_layout = QFormLayout(req_widget)
-        req_layout.setContentsMargins(8, 8, 8, 8)
-        if required_inputs:
-            for inp in required_inputs:
-                self._create_input_widget(inp, req_layout)
-        else:
-            req_layout.addRow(QLabel("No required parameters."))
-        tabs.addTab(req_widget, "Required")
+        # Parameters tab
+        param_widget = QWidget()
+        param_layout = QFormLayout(param_widget)
+        param_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        param_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        param_layout.setContentsMargins(8, 8, 8, 8)
 
-        # Advanced tab (only if there are optional params)
-        if optional_inputs:
-            adv_widget = QWidget()
-            adv_layout = QFormLayout(adv_widget)
-            adv_layout.setContentsMargins(8, 8, 8, 8)
-            for inp in optional_inputs:
-                self._create_input_widget(inp, adv_layout)
-            tabs.addTab(adv_widget, "Advanced")
+        if self.readonly:
+            info_label = QLabel("These parameters are automatically managed by the connected source node.")
+            info_label.setStyleSheet("color: #D32F2F; font-weight: bold; margin-bottom: 5px;")
+            info_label.setWordWrap(True)
+            param_layout.addRow(info_label)
+            param_widget.setEnabled(False)
+
+        if parameters:
+            for inp in parameters:
+                self._create_input_widget(inp, param_layout)
+        else:
+            param_layout.addRow(QLabel("No parameters."))
+        tabs.addTab(param_widget, "Parameters")
 
         # Help tab
         help_widget = QWidget()
@@ -87,7 +100,7 @@ class PropertiesDialog(QDialog):
         help_display.setReadOnly(True)
 
         if help_text:
-            help_display.setFont(QFont('Consolas', 9))
+            help_display.setFont(QFont('Consolas', 11))
             help_display.setPlainText(help_text)
         else:
             help_display.setPlainText('Not available')
@@ -184,10 +197,14 @@ class PropertiesDialog(QDialog):
             h_layout.addWidget(widget)
             
             # Store both in inputs so we can retrieve state later
-            self.inputs[name] = {'widget': widget, 'type': inp_type, 'checkbox': enable_cb, 'can_disable': True}
+            self.inputs[name] = {'widget': widget, 'type': inp_type, 'checkbox': enable_cb, 'can_disable': True, 'label': label}
             final_widget = container
         else:
-            self.inputs[name] = {'widget': widget, 'type': inp_type, 'can_disable': False}
+            self.inputs[name] = {'widget': widget, 'type': inp_type, 'can_disable': False, 'label': label}
+
+        if name in self.disabled_params:
+            final_widget.setEnabled(False)
+            label.setEnabled(False)
 
         layout.addRow(label, final_widget)
 

@@ -95,12 +95,13 @@ function run_pipeline(job_file)
                 
                 % Special Handling: Input EEG
                 % Most functions take EEG as first argument.
-                % EXCEPTions: pop_loadset, pop_mffimport (importers).
+                % EXCEPTions: importers (pop_loadset, pop_mffimport, pop_fileio, pop_biosig)
                 
                 args = {};
                 
                 % Check if this is an importer (doesn't take EEG as input)
-                is_importer = ismember(func_name, {'pop_loadset', 'pop_mffimport', 'pop_biosig'});
+                importer_funcs = {'pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig'};
+                is_importer = ismember(func_name, importer_funcs);
                 
                 if ~is_importer
                    if isempty(current_EEG)
@@ -109,18 +110,30 @@ function run_pipeline(job_file)
                    args{end+1} = current_EEG;
                 end
                 
-                % Inject filename/filepath into importer if missing?
-                % The previous node 'Get Files' provided `file_path`.
-                % If this step is `pop_loadset`, we should pass `filename` and `filepath` from the loop.
-                if strcmp(func_name, 'pop_loadset')
-                     args{end+1} = 'filename';
-                     args{end+1} = [fname fext];
-                     args{end+1} = 'filepath';
-                     args{end+1} = fileparts(file_path);
-                elseif strcmp(func_name, 'pop_mffimport')
-                     args{end+1} = file_path; % pop_mffimport often takes just the path
+                % Inject filename/filepath into importer if it's the first step
+                if is_importer && s == 1
+                    if strcmp(func_name, 'pop_loadset')
+                         args{end+1} = 'filename';
+                         args{end+1} = [fname fext];
+                         args{end+1} = 'filepath';
+                         args{end+1} = fileparts(file_path);
+                    elseif any(strcmp(func_name, {'pop_mffimport', 'pop_fileio', 'pop_biosig'}))
+                         args{end+1} = file_path;
+                    end
                 end
-                
+
+                % Special Handling: pop_saveset
+                % If filename is missing, use original filename + accumulated suffix
+                if strcmp(func_name, 'pop_saveset')
+                    if ~isfield(params, 'filename') || isempty(params.filename)
+                        args{end+1} = 'filename';
+                        if isfield(step, 'current_suffix')
+                            args{end+1} = [fname step.current_suffix fext];
+                        else
+                            args{end+1} = [fname fext];
+                        end
+                    end
+                end
                 % Append other parameters from JSON
                 param_names = fieldnames(params);
                 for p = 1:length(param_names)
@@ -159,6 +172,13 @@ function run_pipeline(job_file)
                     % Update comments/history if needed
                     current_EEG = eeg_checkset(current_EEG);
                     
+                    % Intermediate Save if requested
+                    if isfield(step, 'save_at_this_step') && step.save_at_this_step
+                        suffix = step.current_suffix;
+                        save_name = [fname suffix fext];
+                        fprintf('    (Automatic Save: %s)\n', save_name);
+                        pop_saveset(current_EEG, 'filename', save_name, 'filepath', fileparts(file_path));
+                    end                    
                 catch ME
                     warning('Error executing %s: %s', func_name, ME.message);
                     rethrow(ME);

@@ -43,6 +43,7 @@ class NodeItem(QGraphicsItem):
         self.params = {}
         self.edges = []
         self.user_note = ''
+        self.save_output = False
         
         # Flags
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
