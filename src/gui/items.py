@@ -69,17 +69,10 @@ class NodeItem(QGraphicsItem):
         return QRectF(-padding, -2, self.width + 2*padding, self.height + 6)
         
     def shape(self):
-        # Define the exact hit shape: Body + Ports
+        # The user requested that the entire node area (including its bounding rect margins) 
+        # should be draggable to prevent accidental canvas panning.
         path = QPainterPath()
-        path.addRoundedRect(0, 0, self.width, self.height, self.radius, self.radius)
-        
-        # Add port hit areas (larger than visual for easy clicking)
-        hit_radius = 45
-        if self.has_input:
-            path.addEllipse(self.input_port, hit_radius, hit_radius)
-        if self.has_output:
-            path.addEllipse(self.output_port, hit_radius, hit_radius)
-        
+        path.addRect(self.boundingRect())
         return path
         
     def paint(self, painter, option, widget):
@@ -152,7 +145,7 @@ class NodeItem(QGraphicsItem):
     def get_port_at(self, pos):
         # pos is in item coordinates
         # Hit radius is larger than visual dot (6px) for easy edge creation
-        HIT_RADIUS = 45
+        HIT_RADIUS = 15
         if self.has_input:
             if (pos - self.input_port).manhattanLength() < HIT_RADIUS:
                 return 'input'

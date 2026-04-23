@@ -59,10 +59,9 @@ class CanvasView(QGraphicsView):
         if event.button() == Qt.MouseButton.LeftButton:
             item = self.itemAt(event.pos())
             
-            # Check all items at this position — not just the topmost —
-            # so clicking near the edge of a node still counts as "on the node"
+            # Use bounding rect intersection so clicking anywhere within the node's region works
             scene_pos = self.mapToScene(event.pos())
-            items_at_pos = self.scene.items(scene_pos)
+            items_at_pos = self.scene.items(scene_pos, Qt.ItemSelectionMode.IntersectsItemBoundingRect, Qt.SortOrder.DescendingOrder)
             has_node = any(isinstance(i, NodeItem) for i in items_at_pos)
             has_edge = any(isinstance(i, EdgeItem) for i in items_at_pos)
             
@@ -77,6 +76,11 @@ class CanvasView(QGraphicsView):
                     self.temp_line.show()
                     self.update_temp_line(scene_pos)
                     return
+                else:
+                    # Isolate selection: drag ONLY this node (unless holding modifiers)
+                    if not (event.modifiers() & (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier)):
+                        self.scene.clearSelection()
+                        item.setSelected(True)
             elif not has_node and not has_edge:
                 # Strictly empty canvas — no nodes or edges at click position
                 self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
