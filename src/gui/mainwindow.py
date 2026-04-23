@@ -85,35 +85,29 @@ class MainWindow(QMainWindow):
         self.save_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         toolbar.addAction(self.save_action)
         
+        # Export Job (Standalone)
+        self.export_action = QAction(self._create_export_icon(), "Export Job", self)
+        self.export_action.setToolTip("Export Job File Only")
+        self.export_action.triggered.connect(self.export_job)
+        toolbar.addAction(self.export_action)
+        
         toolbar.addSeparator()
         
         # Undo
-        undo_icon = style.standardIcon(QStyle.StandardPixmap.SP_ArrowBack)
-        self.undo_action.setIcon(undo_icon)
+        self.undo_action.setIcon(self._create_undo_icon())
         toolbar.addAction(self.undo_action)
         
         # Redo
-        redo_icon = style.standardIcon(QStyle.StandardPixmap.SP_ArrowForward)
-        self.redo_action.setIcon(redo_icon)
+        self.redo_action.setIcon(self._create_redo_icon())
         toolbar.addAction(self.redo_action)
         
         toolbar.addSeparator()
         
         # Run Job
-        run_icon = style.standardIcon(QStyle.StandardPixmap.SP_MediaPlay)
-        self.run_action = QAction(run_icon, "Run Job", self)
+        self.run_action = QAction(self._create_run_icon(), "Run Job", self)
         self.run_action.setToolTip("Export and Run Pipeline Job")
         self.run_action.triggered.connect(self.run_job)
         toolbar.addAction(self.run_action)
-
-        toolbar.addSeparator()
-
-        # Export Job (Standalone)
-        export_icon = style.standardIcon(QStyle.StandardPixmap.SP_ArrowRight)
-        self.export_action = QAction(export_icon, "Export Job", self)
-        self.export_action.setToolTip("Export Job File Only")
-        self.export_action.triggered.connect(self.export_job)
-        toolbar.addAction(self.export_action)
 
         toolbar.addSeparator()
 
@@ -409,3 +403,100 @@ class MainWindow(QMainWindow):
                 self.update_title()
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not load file: {e}")
+
+    def _create_undo_icon(self):
+        from PyQt6.QtGui import QPixmap, QPainter, QPen, QColor, QPainterPath, QIcon, QPolygonF
+        from PyQt6.QtCore import Qt, QRectF, QPointF
+        pixmap = QPixmap(24, 24)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        pen = QPen(QColor(50, 50, 50), 2.5)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        
+        path = QPainterPath()
+        rect = QRectF(6, 6, 12, 12)
+        # Start bottom-right (-30 deg), sweep to left (180 deg)
+        path.arcMoveTo(rect, -30)
+        path.arcTo(rect, -30, 210)
+        painter.drawPath(path)
+        
+        # Draw solid arrowhead pointing down at the left end (180 deg)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(50, 50, 50))
+        # Triangle pointing down
+        head = QPolygonF([QPointF(6, 17), QPointF(2, 10), QPointF(10, 10)])
+        painter.drawPolygon(head)
+        
+        painter.end()
+        return QIcon(pixmap)
+
+    def _create_redo_icon(self):
+        from PyQt6.QtGui import QPixmap, QPainter, QPen, QColor, QPainterPath, QIcon, QPolygonF
+        from PyQt6.QtCore import Qt, QRectF, QPointF
+        pixmap = QPixmap(24, 24)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        pen = QPen(QColor(50, 50, 50), 2.5)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        
+        path = QPainterPath()
+        rect = QRectF(6, 6, 12, 12)
+        # Start bottom-left (210 deg), sweep to right (0 deg)
+        path.arcMoveTo(rect, 210)
+        path.arcTo(rect, 210, -210)
+        painter.drawPath(path)
+        
+        # Arrowhead pointing down at the right end (0 deg)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(50, 50, 50))
+        # Triangle pointing down
+        head = QPolygonF([QPointF(18, 17), QPointF(14, 10), QPointF(22, 10)])
+        painter.drawPolygon(head)
+        
+        painter.end()
+        return QIcon(pixmap)
+
+    def _create_export_icon(self):
+        from PyQt6.QtGui import QPixmap, QPainter, QPen, QColor, QIcon, QPolygonF
+        from PyQt6.QtCore import Qt, QPointF
+        pixmap = QPixmap(24, 24)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        pen = QPen(QColor(50, 50, 50), 2)
+        pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
+        painter.setPen(pen)
+        # Box with top opening
+        painter.drawPolyline(QPolygonF([QPointF(8, 8), QPointF(4, 8), QPointF(4, 20), QPointF(20, 20), QPointF(20, 8), QPointF(16, 8)]))
+        
+        # Arrow pointing UP
+        painter.drawLine(12, 14, 12, 4)
+        painter.setBrush(QColor(50, 50, 50))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawPolygon(QPolygonF([QPointF(12, 2), QPointF(8, 7), QPointF(16, 7)]))
+        
+        painter.end()
+        return QIcon(pixmap)
+
+    def _create_run_icon(self):
+        from PyQt6.QtGui import QPixmap, QPainter, QBrush, QColor, QPolygonF, QIcon
+        from PyQt6.QtCore import Qt, QPointF
+        pixmap = QPixmap(24, 24)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(QColor("#2ecc71"))) # Green
+        
+        polygon = QPolygonF([QPointF(6, 4), QPointF(20, 12), QPointF(6, 20)])
+        painter.drawPolygon(polygon)
+        painter.end()
+        return QIcon(pixmap)
