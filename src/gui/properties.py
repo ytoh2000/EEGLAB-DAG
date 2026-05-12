@@ -282,7 +282,11 @@ class PropertiesDialog(QDialog):
             first_file = paths[0]
             if func == 'pop_loadset':
                 if 'filename' in self.inputs:
-                    self.inputs['filename']['widget'].setText(os.path.basename(first_file))
+                    picker = self.inputs['filename']['widget']
+                    if hasattr(picker, 'line_edit'):
+                        picker.line_edit.setText(os.path.basename(first_file))
+                    else:
+                        picker.setText(os.path.basename(first_file))
                 if 'filepath' in self.inputs:
                     # widget is FilePickerWidget, which has line_edit
                     picker = self.inputs['filepath']['widget']

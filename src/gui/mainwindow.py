@@ -454,7 +454,13 @@ class MainWindow(QMainWindow):
             exporter.export(temp_path)
             
             eeglab_path = self.app_settings.get_eeglab_path()
-            src_matlab = os.path.abspath("src/matlab")
+            
+            if getattr(sys, 'frozen', False):
+                base_dir = os.path.dirname(sys.executable)
+                src_matlab = os.path.abspath(os.path.join(base_dir, '..', '..', '..', 'src', 'matlab'))
+            else:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                src_matlab = os.path.abspath(os.path.join(base_dir, '..', 'matlab'))
             
             # Construct MATLAB command
             if eeglab_path:

@@ -78,7 +78,7 @@ function run_pipeline(job_file)
             % Initialize EEG structure (empty) to pass to first function if needed?
             % Most pop_ functions expect (EEG, ...). pop_loadset does not require EEG input usually.
             
-            current_EEG = []; # Placeholder
+            current_EEG = []; % Placeholder
             
             for s = 1:length(job.steps)
                 step = job.steps(s);
