@@ -1,8 +1,11 @@
-from PyQt6.QtWidgets import QMainWindow, QSplitter, QWidget, QVBoxLayout, QToolBar, QFileDialog, QMessageBox
-from PyQt6.QtGui import QAction, QColor
+from PyQt6.QtWidgets import QMainWindow, QSplitter, QWidget, QVBoxLayout, QToolBar, QFileDialog, QMessageBox, QMenuBar, QMenu
+from PyQt6.QtGui import QAction, QColor, QKeySequence
 from PyQt6.QtCore import Qt
 from src.gui.canvas import CanvasView
 from src.gui.sidebar import Sidebar
+from src.gui.pipeline_settings import PipelineSettingsDialog
+from src.gui.app_settings import AppSettingsManager, PreferencesDialog
+from src.gui.execution_dialog import ExecutionDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -12,6 +15,16 @@ class MainWindow(QMainWindow):
         
         self.current_file = None
         self.unsaved_changes = False
+        self.pipeline_settings = {
+            "generate_report": True,
+            "stop_on_error": True,
+            "output_folder": ""
+        }
+        
+        self.app_settings = AppSettingsManager()
+        
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(0, self._check_matlab_path)
         
         # Central Widget and Layout
         self.central_widget = QWidget()
@@ -40,6 +53,7 @@ class MainWindow(QMainWindow):
         # Canvas
         self.canvas = CanvasView()
         self.canvas.pipeline_changed.connect(self.on_pipeline_changed)
+        self.canvas.settings_requested = self.show_pipeline_settings
         self.right_layout.addWidget(self.canvas)
         
         # Connect Sidebar to Canvas
@@ -54,12 +68,25 @@ class MainWindow(QMainWindow):
         # (Already created in previous step inside right_container)
 
         self._create_actions()
+        self._create_menus()
         self._create_main_toolbar()
         
         # Connect undo stack to unsaved changes tracking
         self.canvas.undo_stack.indexChanged.connect(self.on_pipeline_changed)
         
         self.update_title()
+
+    def _check_matlab_path(self):
+        matlab = self.app_settings.get_matlab_path()
+        if not matlab:
+            discovered = self.app_settings.auto_discover_matlab()
+            if discovered:
+                self.app_settings.set_matlab_path(discovered)
+            else:
+                QMessageBox.information(self, "MATLAB Not Found", 
+                                        "MATLAB executable could not be found automatically.\n\n"
+                                        "You can still use EEGLAB-DAG to construct, edit, and export pipelines, but MATLAB is required to execute them and process EEG data.\n\n"
+                                        "If you have MATLAB installed, you can configure its path anytime in Preferences (File -> Preferences).")
 
     def _create_main_toolbar(self):
         toolbar = QToolBar("Main Toolbar")
@@ -75,21 +102,24 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.open_action)
         
         # New from Template
-        template_icon = style.standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder)
-        self.template_action = QAction(template_icon, "New from Template", self)
-        self.template_action.setToolTip("Start from a pipeline template")
-        self.template_action.triggered.connect(self.new_from_template)
+        self.template_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder))
         toolbar.addAction(self.template_action)
         
         # Save
         self.save_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         toolbar.addAction(self.save_action)
         
+        # Pipeline Settings
+        self.settings_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
+        toolbar.addAction(self.settings_action)
+        
         # Export Job (Standalone)
-        self.export_action = QAction(self._create_export_icon(), "Export Job", self)
-        self.export_action.setToolTip("Export Job File Only")
-        self.export_action.triggered.connect(self.export_job)
+        self.export_action.setIcon(self._create_export_icon())
         toolbar.addAction(self.export_action)
+        
+        # Export MATLAB Script
+        self.export_m_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileIcon))
+        toolbar.addAction(self.export_m_action)
         
         toolbar.addSeparator()
         
@@ -104,41 +134,32 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
         
         # Run Job
-        self.run_action = QAction(self._create_run_icon(), "Run Job", self)
-        self.run_action.setToolTip("Export and Run Pipeline Job")
-        self.run_action.triggered.connect(self.run_job)
+        self.run_action.setIcon(self._create_run_icon())
         toolbar.addAction(self.run_action)
 
         toolbar.addSeparator()
 
         # Fit to View
-        fit_icon = style.standardIcon(QStyle.StandardPixmap.SP_TitleBarMaxButton)
-        self.fit_action = QAction(fit_icon, "Fit to View", self)
-        self.fit_action.setToolTip("Fit to View (Ctrl+0)")
-        self.fit_action.setShortcut("Ctrl+0")
-        self.fit_action.triggered.connect(self.canvas.fit_to_view)
+        self.fit_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_TitleBarMaxButton))
         toolbar.addAction(self.fit_action)
         
         # Reset Zoom
-        reset_icon = style.standardIcon(QStyle.StandardPixmap.SP_BrowserReload)
-        self.reset_zoom_action = QAction(reset_icon, "Reset Zoom", self)
-        self.reset_zoom_action.setToolTip("Reset Zoom (Ctrl+=)")
-        self.reset_zoom_action.setShortcut("Ctrl+=")
-        self.reset_zoom_action.triggered.connect(self.canvas.reset_zoom)
+        self.reset_zoom_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
         toolbar.addAction(self.reset_zoom_action)
 
         toolbar.addSeparator()
-
-
-
         toolbar.addSeparator()
 
         # Import from Paper (LLM)
-        paper_icon = style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView)
-        self.paper_action = QAction(paper_icon, "📄 Import from Paper", self)
-        self.paper_action.setToolTip("Build pipeline from a research paper using AI")
-        self.paper_action.triggered.connect(self.import_from_paper)
+        self.paper_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
         toolbar.addAction(self.paper_action)
+
+    def show_pipeline_settings(self):
+        dialog = PipelineSettingsDialog(self, self.pipeline_settings)
+        if dialog.exec():
+            self.pipeline_settings = dialog.get_settings()
+            self.unsaved_changes = True
+            self.update_title()
 
     def import_from_paper(self):
         from src.llm.dialog import PaperImportDialog
@@ -148,6 +169,7 @@ class MainWindow(QMainWindow):
     
     def _on_paper_pipeline_ready(self, pipeline, warnings, reasoning):
         self.canvas.from_pipeline(pipeline)
+        self.pipeline_settings = pipeline.settings
         self.current_file = None
         self.unsaved_changes = True
         self.update_title()
@@ -174,6 +196,7 @@ class MainWindow(QMainWindow):
                 from src.model.pipeline import Pipeline
                 pipeline = Pipeline.load(filename)
                 self.canvas.from_pipeline(pipeline)
+                self.pipeline_settings = pipeline.settings
                 self.current_file = None  # Don't associate with template path
                 self.unsaved_changes = True
                 self.update_title()
@@ -228,16 +251,35 @@ class MainWindow(QMainWindow):
              QMessageBox.warning(self, "Error", "Directory does not exist.")
              self.cwd_edit.setText(os.getcwd()) # Revert
 
+    def show_preferences(self):
+        dialog = PreferencesDialog(self)
+        dialog.exec()
+
     def _create_actions(self):
         self.save_action = QAction("Save", self)
         self.save_action.setToolTip("Save Pipeline (Ctrl+S)")
-        self.save_action.setShortcut("Ctrl+S")
+        self.save_action.setShortcut(QKeySequence.StandardKey.Save)
         self.save_action.triggered.connect(self.save_file)
         
         self.open_action = QAction("Open", self)
         self.open_action.setToolTip("Open Pipeline (Ctrl+O)")
-        self.open_action.setShortcut("Ctrl+O")
+        self.open_action.setShortcut(QKeySequence.StandardKey.Open)
         self.open_action.triggered.connect(self.open_file)
+        
+        self.new_action = QAction("New", self)
+        self.new_action.setShortcut(QKeySequence.StandardKey.New)
+        self.new_action.triggered.connect(self.new_file)
+        
+        self.save_as_action = QAction("Save As...", self)
+        self.save_as_action.setShortcut(QKeySequence.StandardKey.SaveAs)
+        self.save_as_action.triggered.connect(self.save_as_file)
+        
+        self.prefs_action = QAction("Preferences...", self)
+        self.prefs_action.triggered.connect(self.show_preferences)
+        
+        self.exit_action = QAction("Exit", self)
+        self.exit_action.setShortcut(QKeySequence.StandardKey.Quit)
+        self.exit_action.triggered.connect(self.close)
         
         self.undo_action = QAction("Undo", self)
         self.undo_action.setToolTip("Undo (Ctrl+Z)")
@@ -246,11 +288,135 @@ class MainWindow(QMainWindow):
         
         self.redo_action = QAction("Redo", self)
         self.redo_action.setToolTip("Redo (Ctrl+Shift+Z)")
-        self.redo_action.setShortcut("Ctrl+Shift+Z")
+        self.redo_action.setShortcut(QKeySequence.StandardKey.Redo)
         self.redo_action.triggered.connect(lambda: self.canvas.undo_stack.redo())
+        
+        self.delete_action = QAction("Delete Selected", self)
+        self.delete_action.setShortcut(QKeySequence.StandardKey.Delete)
+        self.delete_action.triggered.connect(self.canvas.remove_selected_items)
+        
+        self.clear_action = QAction("Clear Canvas", self)
+        self.clear_action.triggered.connect(self.canvas.clear_canvas)
+        
+        self.template_action = QAction("New from Template", self)
+        self.template_action.setToolTip("Start from a pipeline template")
+        self.template_action.triggered.connect(self.new_from_template)
+        
+        self.settings_action = QAction("Pipeline Settings", self)
+        self.settings_action.setToolTip("Configure pipeline-level settings")
+        self.settings_action.triggered.connect(self.show_pipeline_settings)
+        
+        self.export_action = QAction("Export Job", self)
+        self.export_action.setToolTip("Export Job File Only (JSON)")
+        self.export_action.triggered.connect(self.export_job)
+        
+        self.export_m_action = QAction("Export MATLAB Script", self)
+        self.export_m_action.setToolTip("Export Standalone MATLAB Script(s)")
+        self.export_m_action.triggered.connect(self.export_matlab_script)
+        
+        self.run_action = QAction("Run Job", self)
+        self.run_action.setToolTip("Export and Run Pipeline Job")
+        self.run_action.triggered.connect(self.run_job)
+        
+        self.fit_action = QAction("Fit to View", self)
+        self.fit_action.setToolTip("Fit to View (Ctrl+0)")
+        self.fit_action.setShortcut("Ctrl+0")
+        self.fit_action.triggered.connect(self.canvas.fit_to_view)
+        
+        self.reset_zoom_action = QAction("Reset Zoom", self)
+        self.reset_zoom_action.setToolTip("Reset Zoom (Ctrl+=)")
+        self.reset_zoom_action.setShortcut("Ctrl+=")
+        self.reset_zoom_action.triggered.connect(self.canvas.reset_zoom)
+        
+        self.paper_action = QAction("📄 Import from Paper", self)
+        self.paper_action.setToolTip("Build pipeline from a research paper using AI")
+        self.paper_action.triggered.connect(self.import_from_paper)
+        
+        self.zoom_in_action = QAction("Zoom In", self)
+        self.zoom_in_action.setShortcut(QKeySequence.StandardKey.ZoomIn)
+        self.zoom_in_action.triggered.connect(self.canvas.zoom_in)
+        
+        self.zoom_out_action = QAction("Zoom Out", self)
+        self.zoom_out_action.setShortcut(QKeySequence.StandardKey.ZoomOut)
+        self.zoom_out_action.triggered.connect(self.canvas.zoom_out)
+        
+        self.toggle_sidebar_action = QAction("Toggle Sidebar", self)
+        self.toggle_sidebar_action.setCheckable(True)
+        self.toggle_sidebar_action.setChecked(True)
+        self.toggle_sidebar_action.triggered.connect(self.sidebar.setVisible)
+        
+        self.about_action = QAction("About EEGLAB-DAG", self)
+        self.about_action.triggered.connect(self.show_about)
+
+    def _create_menus(self):
+        menubar = self.menuBar()
+        
+        # File Menu
+        file_menu = menubar.addMenu("File")
+        file_menu.addAction(self.new_action)
+        file_menu.addAction(self.open_action)
+        file_menu.addAction(self.template_action)
+        file_menu.addSeparator()
+        file_menu.addAction(self.save_action)
+        file_menu.addAction(self.save_as_action)
+        file_menu.addSeparator()
+        file_menu.addAction(self.export_action)
+        file_menu.addAction(self.export_m_action)
+        file_menu.addSeparator()
+        file_menu.addAction(self.prefs_action)
+        file_menu.addSeparator()
+        file_menu.addAction(self.exit_action)
+        
+        # Edit Menu
+        edit_menu = menubar.addMenu("Edit")
+        edit_menu.addAction(self.undo_action)
+        edit_menu.addAction(self.redo_action)
+        edit_menu.addSeparator()
+        edit_menu.addAction(self.delete_action)
+        edit_menu.addAction(self.clear_action)
+        
+        # View Menu
+        view_menu = menubar.addMenu("View")
+        view_menu.addAction(self.zoom_in_action)
+        view_menu.addAction(self.zoom_out_action)
+        view_menu.addAction(self.reset_zoom_action)
+        view_menu.addAction(self.fit_action)
+        view_menu.addSeparator()
+        view_menu.addAction(self.toggle_sidebar_action)
+        
+        # Pipeline Menu
+        pipeline_menu = menubar.addMenu("Pipeline")
+        pipeline_menu.addAction(self.settings_action)
+        pipeline_menu.addAction(self.run_action)
+        
+        # AI Assistant Menu
+        ai_menu = menubar.addMenu("AI Assistant")
+        ai_menu.addAction(self.paper_action)
+        
+        # Help Menu
+        help_menu = menubar.addMenu("Help")
+        help_menu.addAction(self.about_action)
+
+    def new_file(self):
+        if self.prompt_save_if_needed():
+            self.canvas.clear_canvas()
+            self.current_file = None
+            self.unsaved_changes = False
+            self.update_title()
+            
+    def save_as_file(self):
+        old_file = self.current_file
+        self.current_file = None
+        if not self.save_file():
+            self.current_file = old_file
+            return False
+        return True
+            
+    def show_about(self):
+        QMessageBox.about(self, "About EEGLAB-DAG", 
+                          "EEGLAB-DAG Pipeline Editor\nA graphical tool for creating and executing EEGLAB processing pipelines.")
 
     def run_job(self):
-        # 1. Prompt Save if needed
         if self.unsaved_changes:
             reply = QMessageBox.question(self, "Unsaved Changes", 
                                          "The pipeline has unsaved changes.\nDo you want to save the pipeline before running?",
@@ -258,17 +424,54 @@ class MainWindow(QMainWindow):
             
             if reply == QMessageBox.StandardButton.Yes:
                 if not self.save_file():
-                    return # Cancelled save, stop run
+                    return
             elif reply == QMessageBox.StandardButton.Cancel:
-                return # Cancel run
+                return
+                
+        matlab_path = self.app_settings.get_matlab_path()
+        if not matlab_path:
+            QMessageBox.warning(self, "MATLAB Path Not Set", 
+                                "Please configure the MATLAB executable path in Preferences (File -> Preferences).")
+            return
+            
+        pipeline = self.canvas.to_pipeline()
+        pipeline.settings = self.pipeline_settings
+        is_valid, error_msg = pipeline.validate(check_files=True)
+        if not is_valid:
+            QMessageBox.critical(self, "Validation Error", error_msg)
+            return
+            
+        import tempfile
+        import os
+        from src.model.job_exporter import JobExporter
         
-        # 2. Export Job (Auto-prompt via common logic? Or distinct flow?)
-        # For Run Job, we usually just want to get the file.
-        self.export_job(run_after=True)
+        # Export temporary json
+        fd, temp_path = tempfile.mkstemp(suffix='.json', text=True)
+        os.close(fd)
+        
+        try:
+            exporter = JobExporter(pipeline)
+            exporter.export(temp_path)
+            
+            eeglab_path = self.app_settings.get_eeglab_path()
+            src_matlab = os.path.abspath("src/matlab")
+            
+            # Construct MATLAB command
+            if eeglab_path:
+                cmd_inner = f"addpath('{eeglab_path}'); eeglab nogui; addpath('{src_matlab}'); run_pipeline('{temp_path}'); exit;"
+            else:
+                cmd_inner = f"addpath('{src_matlab}'); run_pipeline('{temp_path}'); exit;"
+                
+            self.execution_dialog = ExecutionDialog(self)
+            self.execution_dialog.start_execution(matlab_path, ["-batch", cmd_inner])
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to start MATLAB execution: {e}")
 
-    def export_job(self, run_after=False):
+    def export_job(self):
         # 1. Validation (Structure + Files)
         pipeline = self.canvas.to_pipeline()
+        pipeline.settings = self.pipeline_settings
         is_valid, error_msg = pipeline.validate(check_files=True)
         
         if not is_valid:
@@ -282,8 +485,8 @@ class MainWindow(QMainWindow):
                 exporter = JobExporter(pipeline)
                 exporter.export(filename)
                 
-                if run_after:
-                    # 3. Execution Hint
+                if getattr(self, '_testing_run_after', False):
+                    # Keep run_after msg for legacy code if somehow passed
                     msg = f"Job successfully exported onto:\n{filename}\n\nTo execute in EEGLAB:\n1. Click 'Execute Job' in the DAG menu.\n2. Or run: run_pipeline('{filename}')"
                     QMessageBox.information(self, "Job Exported", msg)
                 else:
@@ -291,6 +494,28 @@ class MainWindow(QMainWindow):
                 
             except Exception as e:
                 QMessageBox.critical(self, "Validation Error", f"Could not export job:\n{e}")
+
+    def export_matlab_script(self):
+        pipeline = self.canvas.to_pipeline()
+        pipeline.settings = self.pipeline_settings
+        is_valid, error_msg = pipeline.validate(check_files=True)
+        
+        if not is_valid:
+            QMessageBox.critical(self, "Validation Error", error_msg)
+            return
+
+        filename, _ = QFileDialog.getSaveFileName(self, "Export MATLAB Script", "", "MATLAB Files (*.m)")
+        if not filename:
+            return
+
+        from src.matlab.codegen import CodeGenerator
+        generator = CodeGenerator(pipeline)
+        try:
+            generated_files = generator.generate(filename)
+            msg = "Generated MATLAB scripts:\n" + "\n".join(generated_files)
+            QMessageBox.information(self, "Success", msg)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to generate MATLAB script:\n{e}")
 
     def on_pipeline_changed(self):
         self.unsaved_changes = True
@@ -335,6 +560,7 @@ class MainWindow(QMainWindow):
     def save_file(self):
         # 1. Validation (Structure Only)
         pipeline = self.canvas.to_pipeline()  
+        pipeline.settings = self.pipeline_settings
         is_valid, error_msg = pipeline.validate(check_files=False)
         
         if not is_valid:
@@ -398,6 +624,7 @@ class MainWindow(QMainWindow):
                 from src.model.pipeline import Pipeline
                 pipeline = Pipeline.load(filename)
                 self.canvas.from_pipeline(pipeline)
+                self.pipeline_settings = pipeline.settings
                 self.current_file = filename
                 self.unsaved_changes = False
                 self.update_title()

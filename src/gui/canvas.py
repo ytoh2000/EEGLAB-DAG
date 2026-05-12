@@ -275,6 +275,20 @@ class CanvasView(QGraphicsView):
         else:
             super().wheelEvent(event)
 
+    def zoom_in(self):
+        factor = 1.15
+        new_zoom = self._zoom_factor * factor
+        if 0.1 <= new_zoom <= 5.0:
+            self._zoom_factor = new_zoom
+            self.scale(factor, factor)
+            
+    def zoom_out(self):
+        factor = 1 / 1.15
+        new_zoom = self._zoom_factor * factor
+        if 0.1 <= new_zoom <= 5.0:
+            self._zoom_factor = new_zoom
+            self.scale(factor, factor)
+
     def fit_to_view(self):
         """Fit all scene content into the current viewport."""
         items = [i for i in self.scene.items() if isinstance(i, (NodeItem, EdgeItem))]
@@ -392,6 +406,21 @@ class CanvasView(QGraphicsView):
             if isinstance(item, NodeItem):
                 self.undo_stack.push(RemoveNodeCommand(self, item))
         
+        self.undo_stack.endMacro()
+
+    def clear_canvas(self):
+        self.undo_stack.beginMacro("Clear Canvas")
+        
+        # Remove all edges first
+        for item in self.scene.items():
+            if isinstance(item, EdgeItem):
+                self.undo_stack.push(RemoveEdgeCommand(self, item))
+                
+        # Remove all nodes
+        for item in self.scene.items():
+            if isinstance(item, NodeItem):
+                self.undo_stack.push(RemoveNodeCommand(self, item))
+                
         self.undo_stack.endMacro()
 
     def update_temp_line(self, target_pos):

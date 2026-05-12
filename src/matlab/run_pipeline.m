@@ -145,6 +145,17 @@ function run_pipeline(job_file)
                         continue;
                     end
                     
+                    % Skip the parameter that was already injected as primary input
+                    if is_importer && s == 1
+                        if strcmp(func_name, 'pop_loadset') && (strcmp(pname, 'filename') || strcmp(pname, 'filepath'))
+                            continue;
+                        elseif strcmp(func_name, 'pop_mffimport') && strcmp(pname, 'mffFile')
+                            continue;
+                        elseif any(strcmp(func_name, {'pop_fileio', 'pop_biosig'})) && strcmp(pname, 'filename')
+                            continue;
+                        end
+                    end
+                    
                     % Example: Handle 'channels' which might be cell array of strings
                     if iscell(pval) && iscellstr(pval)
                          % keep as cell

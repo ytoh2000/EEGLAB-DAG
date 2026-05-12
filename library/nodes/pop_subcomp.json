@@ -1,0 +1,30 @@
+{
+    "name": "Reject Marked ICs",
+    "function": "pop_subcomp",
+    "type": "process",
+    "category": "Tools",
+    "description": "Remove selected/marked independent components from data",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_subcomp.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "components",
+            "type": "string",
+            "description": "Components to remove (e.g. '[1 2 5]'). Leave empty to use marked components.",
+            "required": false,
+            "default": ""
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Output EEG structure with components removed"
+        }
+    ]
+}

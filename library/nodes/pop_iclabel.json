@@ -1,0 +1,31 @@
+{
+    "name": "Label ICs (ICLabel)",
+    "function": "pop_iclabel",
+    "type": "process",
+    "category": "Tools",
+    "description": "Label independent components using ICLabel",
+    "github_url": "https://github.com/sccn/ICLabel/blob/master/pop_iclabel.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "version",
+            "type": "enum",
+            "description": "ICLabel version to use",
+            "required": false,
+            "options": ["default", "lite"],
+            "default": "default"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Output EEG structure with ICLabel classifications"
+        }
+    ]
+}

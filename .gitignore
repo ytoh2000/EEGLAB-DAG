@@ -22,4 +22,6 @@ dist/
 
 # Local config (contains API key)
 .eeglab-dag/
-app.log
+app.lo
+library/pipelines/*.json
+

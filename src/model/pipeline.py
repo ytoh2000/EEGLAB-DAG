@@ -4,6 +4,11 @@ class Pipeline:
     def __init__(self):
         self.nodes = []
         self.edges = []
+        self.settings = {
+            "generate_report": True,
+            "stop_on_error": True,
+            "output_folder": ""
+        }
         
     def add_node(self, node_data):
         self.nodes.append(node_data)
@@ -13,6 +18,7 @@ class Pipeline:
         
     def to_dict(self):
         return {
+            "settings": self.settings,
             "nodes": [n.to_dict() for n in self.nodes],
             "edges": [e.to_dict() for e in self.edges]
         }
@@ -30,6 +36,11 @@ class Pipeline:
     @classmethod
     def from_dict(cls, data):
         pipeline = cls()
+        pipeline.settings = data.get("settings", {
+            "generate_report": True,
+            "stop_on_error": True,
+            "output_folder": ""
+        })
         pipeline.nodes = [NodeData.from_dict(n) for n in data.get("nodes", [])]
         pipeline.edges = [EdgeData.from_dict(e) for e in data.get("edges", [])]
         return pipeline
@@ -42,30 +53,28 @@ class Pipeline:
         Returns:
             (bool, str): (is_valid, error_message)
         """
+        import networkx as nx
+        
         # 1. Empty Check
         if not self.nodes:
             return False, "The canvas is empty. Please add nodes before saving."
-        
-        import networkx as nx
-        
+            
+        G = nx.DiGraph()
+        node_map = {n.id: n for n in self.nodes}
+        for n in self.nodes:
+            G.add_node(n.id)
+        for e in self.edges:
+            G.add_edge(e.source, e.target)
+
         # 2. Cycle Detection
         if self.edges:
-            G = nx.DiGraph()
-            node_map = {n.id: n for n in self.nodes}
-            for n in self.nodes:
-                G.add_node(n.id)
-            for e in self.edges:
-                G.add_edge(e.source, e.target)
-            
             if not nx.is_directed_acyclic_graph(G):
                 return False, "Pipeline contains cycles (loops). Please remove loops before saving."
             
             # 3. Connectivity Check — warn about disconnected nodes
-            # Convert to undirected to check if all nodes are reachable
             undirected = G.to_undirected()
             components = list(nx.connected_components(undirected))
             if len(components) > 1:
-                # Find the smaller disconnected groups
                 components.sort(key=len, reverse=True)
                 disconnected_labels = []
                 for comp in components[1:]:
@@ -77,10 +86,17 @@ class Pipeline:
                     suffix = f" (and {len(disconnected_labels)-3} more)" if len(disconnected_labels) > 3 else ""
                     return False, f"Some nodes are disconnected from the pipeline: {names}{suffix}. Connect or remove them."
             
-        # 4. Input Node Check
-        input_nodes = [n for n in self.nodes if n.type == 'input']
-        if not input_nodes:
-             return False, "No input nodes (e.g. Create File Lists) are specified."
+        # 4. Source Node Check
+        source_nodes = [n for n in G.nodes if G.in_degree(n) == 0]
+        valid_sources = []
+        importer_funcs = {'pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig', 'get_files'}
+        for nid in source_nodes:
+            n = node_map[nid]
+            if n.type == 'input' or n.function in importer_funcs:
+                valid_sources.append(n)
+                
+        if not valid_sources:
+             return False, "No valid source nodes (e.g. Create File Lists or Load Data) are specified at the start of the pipeline."
              
         # 5. Output/Plotting Node Check
         output_nodes = [n for n in self.nodes if n.type in ('output', 'visualization')]
@@ -89,10 +105,19 @@ class Pipeline:
              
         # 6. File Check (for Export)
         if check_files:
-            for node in input_nodes:
-                files = node.params.get('file_paths', [])
-                if not files:
-                    return False, f"No input files selected in '{node.label}'."
+            for node in valid_sources:
+                if node.function == 'get_files':
+                    files = node.params.get('file_paths', [])
+                    if not files:
+                        return False, f"No input files selected in '{node.label}'."
+                elif node.function in importer_funcs:
+                    if node.function == 'pop_mffimport':
+                        filename = node.params.get('mffFile', '')
+                    else:
+                        filename = node.params.get('filename', '')
+                        
+                    if not filename:
+                        return False, f"No file specified in '{node.label}'."
                     
         return True, ""
 
