@@ -10,12 +10,14 @@
         {
             "name": "EEG",
             "type": "dataset",
+            "arg_type": "positional",
             "description": "Input EEG structure",
             "required": true
         },
         {
             "name": "freq",
             "type": "float",
+            "arg_type": "positional",
             "description": "New sampling rate (Hz) (e.g. 250).",
             "required": true,
             "default": 250
@@ -23,6 +25,7 @@
         {
             "name": "fc",
             "type": "float",
+            "arg_type": "positional",
             "description": "Anti-aliasing filter cutoff (pi rad / sample).",
             "required": false,
             "default": 0.9
@@ -30,6 +33,7 @@
         {
             "name": "df",
             "type": "float",
+            "arg_type": "positional",
             "description": "Anti-aliasing filter transition band width.",
             "required": false,
             "default": 0.2

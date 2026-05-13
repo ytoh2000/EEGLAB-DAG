@@ -85,6 +85,7 @@ Restart the DAG Editor and your node will appear in the sidebar.
 |---|---|---|
 | `name` | ✅ | MATLAB parameter name (passed as name-value pair) |
 | `type` | ✅ | One of the types listed above |
+| `arg_type` | ❌ | `"positional"` or `"name-value"`. Controls how the argument is passed to MATLAB. Default: `"name-value"` |
 | `description` | ✅ | Shown as label/tooltip in the properties dialog |
 | `required` | ❌ | If `true`, shown by default. If `false`, hidden under "Show Optional" toggle. Default: `false` |
 | `default` | ❌ | Default value pre-filled in the dialog |

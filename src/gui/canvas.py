@@ -343,7 +343,7 @@ class CanvasView(QGraphicsView):
         else:
             super().contextMenuEvent(event)
 
-    def open_properties(self, item):
+    def open_properties(self, item, prefilled_params=None):
         # Determine if we should disable parameters (linked to Create File Lists)
         is_linked_to_get_files = False
         if item.function_name in ('pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig'):
@@ -362,8 +362,10 @@ class CanvasView(QGraphicsView):
                 disabled_params = ['filename']
 
         old_params = dict(item.params)
+        current_params = prefilled_params if prefilled_params is not None else item.params
+        
         old_note = item.user_note
-        dialog = PropertiesDialog(item.label_text, item.params, item.step_def, self, 
+        dialog = PropertiesDialog(item.label_text, current_params, item.step_def, self, 
                                   user_note=item.user_note, 
                                   readonly=is_linked_to_get_files,
                                   disabled_params=disabled_params,
@@ -453,16 +455,32 @@ class CanvasView(QGraphicsView):
         return None, None
         
     def dragEnterEvent(self, event):
-        if event.mimeData().hasText():
+        super().dragEnterEvent(event)
+        if event.isAccepted():
+            return
+            
+        # Distinguish library node drags (text) from file drags (urls)
+        if event.mimeData().hasText() and not event.mimeData().hasUrls():
             event.accept()
         else:
             event.ignore()
 
     def dragMoveEvent(self, event):
-        event.accept()
+        super().dragMoveEvent(event)
+        if event.isAccepted():
+            return
+            
+        if event.mimeData().hasText() and not event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
 
     def dropEvent(self, event):
-        if event.mimeData().hasText():
+        super().dropEvent(event)
+        if event.isAccepted():
+            return
+            
+        if event.mimeData().hasText() and not event.mimeData().hasUrls():
             node_name = event.mimeData().text()
             pos = self.mapToScene(event.position().toPoint())
             

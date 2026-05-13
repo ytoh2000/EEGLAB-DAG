@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog, QTabWidget, QTextEdit
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog, QTabWidget, QTextEdit, QSizePolicy
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QIntValidator, QFont
 
@@ -73,7 +73,7 @@ class PropertiesDialog(QDialog):
         param_widget = QWidget()
         param_layout = QFormLayout(param_widget)
         param_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
-        param_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        param_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         param_layout.setContentsMargins(8, 8, 8, 8)
 
         if self.readonly:
@@ -191,7 +191,7 @@ class PropertiesDialog(QDialog):
             if inp_type == 'float':
                 widget.setValidator(QDoubleValidator())
                 widget.textChanged.connect(self._validate_all)
-            elif inp_type == 'int':
+            elif inp_type in ['int', 'integer']:
                 widget.setValidator(QIntValidator())
                 widget.textChanged.connect(self._validate_all)
         
@@ -242,7 +242,21 @@ class PropertiesDialog(QDialog):
                 continue # Skip value retrieval
             
             if isinstance(widget, QLineEdit):
-                new_params[name] = widget.text()
+                text_val = widget.text()
+                if text_val == "":
+                    new_params[name] = text_val
+                elif w_type in ['int', 'integer']:
+                    try:
+                        new_params[name] = int(text_val)
+                    except ValueError:
+                        new_params[name] = text_val
+                elif w_type == 'float':
+                    try:
+                        new_params[name] = float(text_val)
+                    except ValueError:
+                        new_params[name] = text_val
+                else:
+                    new_params[name] = text_val
             elif isinstance(widget, QComboBox):
                 new_params[name] = widget.currentText()
             elif isinstance(widget, QCheckBox):
@@ -453,6 +467,7 @@ class FilePickerWidget(QWidget):
         layout.setContentsMargins(0,0,0,0)
         
         self.line_edit = QLineEdit(str(initial_path) if initial_path else "")
+        self.line_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.line_edit)
         
         # Better to use button

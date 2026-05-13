@@ -64,9 +64,9 @@ class JobExporter:
             
         return True, ""
 
-    def export(self, file_path):
+    def build_job_dict(self):
         """
-        Exports the pipeline validation and processing information to a JSON file.
+        Compiles the pipeline validation and processing information into a dictionary.
         """
         valid, msg = self.validate()
         if not valid:
@@ -132,10 +132,38 @@ class JobExporter:
             if node_suffix:
                 cumulative_suffix += "_" + node_suffix
                 
+            arguments = []
+            if step_def and 'inputs' in step_def:
+                for inp in step_def['inputs']:
+                    if inp.get('type') == 'dataset':
+                        continue
+                    name = inp.get('name')
+                    arg_type = inp.get('arg_type', 'name-value')
+                    val = node.params.get(name, inp.get('default'))
+                    
+                    if val == 'off' or val == '':
+                        if arg_type == 'positional':
+                            arguments.append([])
+                        continue
+                        
+                    if arg_type == 'positional':
+                        arguments.append(val)
+                    else:
+                        arguments.extend([name, val])
+                
+                # Trim trailing empties for positional args
+                while arguments and arguments[-1] == []:
+                    arguments.pop()
+            else:
+                for k, v in node.params.items():
+                    if v != 'off' and v != '':
+                        arguments.extend([k, v])
+                
             step_info = {
                 "function": func_name,
                 "label": node.label,
                 "parameters": node.params,
+                "arguments": arguments,
                 "current_suffix": cumulative_suffix
             }
             
@@ -149,7 +177,4 @@ class JobExporter:
             "steps": steps
         }
         
-        with open(file_path, 'w') as f:
-            json.dump(job, f, indent=4)
-            
         return job

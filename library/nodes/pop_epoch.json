@@ -10,12 +10,14 @@
         {
             "name": "EEG",
             "type": "dataset",
+            "arg_type": "positional",
             "description": "Input EEG structure",
             "required": true
         },
         {
             "name": "types",
             "type": "string",
+            "arg_type": "positional",
             "description": "Event types to time-lock to (e.g. 'square' or {'rt', 'resp'}).",
             "required": true,
             "default": "{}"
@@ -23,6 +25,7 @@
         {
             "name": "timelim",
             "type": "string",
+            "arg_type": "positional",
             "description": "Epoch limits [start end] in seconds (e.g. [-1 2]).",
             "required": true,
             "default": "[-1 2]"

@@ -49,6 +49,7 @@ class NodeItem(QGraphicsItem):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
+        self.setAcceptDrops(True)
         
         self.setPos(x, y)
         
@@ -159,6 +160,82 @@ class NodeItem(QGraphicsItem):
             for edge in self.edges:
                 edge.adjust()
         return super().itemChange(change, value)
+        
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            func = self.function_name
+            if func in ['pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig', 'get_files']:
+                event.acceptProposedAction()
+                return
+        event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            func = self.function_name
+            if func in ['pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig', 'get_files']:
+                event.acceptProposedAction()
+                return
+        event.ignore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        if not urls:
+            return
+            
+        import os
+        paths = [u.toLocalFile() for u in urls]
+        func = self.function_name
+        
+        views = self.scene().views()
+        view = views[0] if views else None
+        
+        from PyQt6.QtWidgets import QMessageBox
+        
+        # Work on a copy of params so we can pass it to properties dialog safely
+        new_params = dict(self.params)
+        
+        if func == 'pop_loadset':
+            path = paths[0]
+            if not path.endswith('.set'):
+                if view:
+                    QMessageBox.warning(view, "Invalid File", "Load Data node only accepts .set files.")
+                return
+            new_params['filename'] = os.path.basename(path)
+            new_params['filepath'] = os.path.dirname(path)
+            
+        elif func == 'pop_mffimport':
+            path = paths[0]
+            if not path.endswith('.mff'):
+                if view:
+                    QMessageBox.warning(view, "Invalid File", "Load MFF node only accepts .mff files/folders.")
+                return
+            new_params['mffFile'] = path
+            
+        elif func in ['pop_fileio', 'pop_biosig']:
+            path = paths[0]
+            if os.path.isdir(path):
+                if view:
+                    QMessageBox.warning(view, "Invalid File", "This node requires a file, not a directory.")
+                return
+            new_params['filename'] = path
+            
+        elif func == 'get_files':
+            current_files = new_params.get('file_paths', [])
+            if not isinstance(current_files, list):
+                current_files = []
+            # Make a copy of the list so we don't mutate the original yet
+            current_files = list(current_files)
+            current_files.extend(paths)
+            new_params['file_paths'] = current_files
+            
+        event.acceptProposedAction()
+        
+        if view:
+            # Automatically open the properties dialog pre-filled with the dropped data
+            view.open_properties(self, prefilled_params=new_params)
+        else:
+            self.params = new_params
+            self.refresh_tooltip()
     
     def add_edge(self, edge):
         self.edges.append(edge)

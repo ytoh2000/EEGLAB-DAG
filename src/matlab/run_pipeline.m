@@ -53,158 +53,183 @@ function run_pipeline(job_file)
     end
     eeglab nogui;
     
-    % 3. Iterate over files
-    num_files = length(job.files);
+    % 3. Extract Settings
+    settings = struct();
+    if isfield(job, 'settings')
+        settings = job.settings;
+    end
+    
+    error_strategy = 'halt';
+    if isfield(settings, 'error_strategy')
+        error_strategy = settings.error_strategy;
+    end
+    
+    test_mode = false;
+    if isfield(settings, 'test_mode')
+        test_mode = settings.test_mode;
+    end
+    
+    test_sample_size = 1;
+    if isfield(settings, 'test_sample_size')
+        test_sample_size = settings.test_sample_size;
+    end
+    
+    parallel_processing = false;
+    if isfield(settings, 'parallel_processing')
+        parallel_processing = settings.parallel_processing;
+    end
+
+    % 4. Iterate over files
+    input_files = job.files;
+    
+    if test_mode && length(input_files) > test_sample_size
+        fprintf('\n[TEST MODE ENABLED] Randomly sampling %d files out of %d.\n', test_sample_size, length(input_files));
+        rng('shuffle');
+        idx = randperm(length(input_files), test_sample_size);
+        input_files = input_files(idx);
+    end
+    
+    num_files = length(input_files);
     fprintf('Found %d files to process.\n', num_files);
     
-    for i = 1:num_files
-        file_path = job.files{i};
-        [~, fname, fext] = fileparts(file_path);
-        
-        fprintf('\nProcessing file %d/%d: %s\n', i, num_files, fname);
-        
-        try
-            % 4. Load Data (Implicit first step or Explicit?)
-            % If the first step is NOT pop_loadset, we generally need to load it.
-            % But typically the pipeline construction implies the source node does loading?
-            % In our DAG, 'Get Files' just passes the path. The standard is to then call pop_loadset.
-            % However, our DAG *library* defines 'pop_loadset' as a step.
-            % If the user put 'Get Files' -> 'Load Set' -> 'Filter', then we follow steps.
-            % BUT: 'Get Files' output is a list. The loop is happening HERE.
-            % So the first step in the `job.steps` list should normally be the loading function.
-            % Let's verify compatibility: pop_loadset takes 'filename', 'filepath'.
-            % We might need to inject these params if the first step is a loader.
-            
-            % Initialize EEG structure (empty) to pass to first function if needed?
-            % Most pop_ functions expect (EEG, ...). pop_loadset does not require EEG input usually.
-            
-            current_EEG = []; % Placeholder
-            
-            for s = 1:length(job.steps)
-                step = job.steps(s);
-                func_name = step.function;
-                params = step.parameters;
-                
-                fprintf('  -> Step %d: %s (%s)\n', s, func_name, step.label);
-                
-                % Prepare Arguments
-                % We need to convert the struct 'params' into Name-Value pairs or positional args depending on function.
-                % Most pop_ functions support Name-Value pairs or old style positional.
-                % Ideally we use the new python library calling style which is often struct or NV pairs.
-                % For standard pop_ functions, we can construct the argument list dynamically.
-                
-                % Special Handling: Input EEG
-                % Most functions take EEG as first argument.
-                % EXCEPTions: importers (pop_loadset, pop_mffimport, pop_fileio, pop_biosig)
-                
-                args = {};
-                
-                % Check if this is an importer (doesn't take EEG as input)
-                importer_funcs = {'pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig'};
-                is_importer = ismember(func_name, importer_funcs);
-                
-                if ~is_importer
-                   if isempty(current_EEG)
-                       error('Attempting to process %s but no EEG data loaded yet.', func_name);
-                   end
-                   args{end+1} = current_EEG;
-                end
-                
-                % Inject filename/filepath into importer if it's the first step
-                if is_importer && s == 1
-                    if strcmp(func_name, 'pop_loadset')
-                         args{end+1} = 'filename';
-                         args{end+1} = [fname fext];
-                         args{end+1} = 'filepath';
-                         args{end+1} = fileparts(file_path);
-                    elseif any(strcmp(func_name, {'pop_mffimport', 'pop_fileio', 'pop_biosig'}))
-                         args{end+1} = file_path;
-                    end
-                end
-
-                % Special Handling: pop_saveset
-                % If filename is missing, use original filename + accumulated suffix
-                if strcmp(func_name, 'pop_saveset')
-                    if ~isfield(params, 'filename') || isempty(params.filename)
-                        args{end+1} = 'filename';
-                        if isfield(step, 'current_suffix')
-                            args{end+1} = [fname step.current_suffix fext];
-                        else
-                            args{end+1} = [fname fext];
-                        end
-                    end
-                end
-                % Append other parameters from JSON
-                param_names = fieldnames(params);
-                for p = 1:length(param_names)
-                    pname = param_names{p};
-                    pval = params.(pname);
-                    
-                    % Skip internal/empty params if needed, or translate
-                    if isempty(pval) || strcmp(pval, 'off')
-                        continue;
-                    end
-                    
-                    % Skip the parameter that was already injected as primary input
-                    if is_importer && s == 1
-                        if strcmp(func_name, 'pop_loadset') && (strcmp(pname, 'filename') || strcmp(pname, 'filepath'))
-                            continue;
-                        elseif strcmp(func_name, 'pop_mffimport') && strcmp(pname, 'mffFile')
-                            continue;
-                        elseif any(strcmp(func_name, {'pop_fileio', 'pop_biosig'})) && strcmp(pname, 'filename')
-                            continue;
-                        end
-                    end
-                    
-                    % Example: Handle 'channels' which might be cell array of strings
-                    if iscell(pval) && iscellstr(pval)
-                         % keep as cell
-                    elseif ischar(pval)
-                         % keep as char
-                    end
-                    
-                    args{end+1} = pname;
-                    args{end+1} = pval;
-                end
-                
-                % Execute Function
-                try
-                    if is_importer
-                        current_EEG = feval(func_name, args{:});
-                    else
-                        current_EEG = feval(func_name, args{:});
-                    end
-                    
-                    % Check result
-                    if isempty(current_EEG)
-                         error('Function %s returned empty result.', func_name);
-                    end
-                    
-                    % Update comments/history if needed
-                    current_EEG = eeg_checkset(current_EEG);
-                    
-                    % Intermediate Save if requested
-                    if isfield(step, 'save_at_this_step') && step.save_at_this_step
-                        suffix = step.current_suffix;
-                        save_name = [fname suffix fext];
-                        fprintf('    (Automatic Save: %s)\n', save_name);
-                        pop_saveset(current_EEG, 'filename', save_name, 'filepath', fileparts(file_path));
-                    end                    
-                catch ME
-                    warning('Error executing %s: %s', func_name, ME.message);
+    if parallel_processing
+        fprintf('Starting parallel processing (requires Parallel Computing Toolbox)...\n');
+        parfor i = 1:num_files
+            fprintf('\nProcessing file %d/%d: %s (Worker)\n', i, num_files, input_files{i});
+            try
+                process_single_file(input_files{i}, job.steps);
+            catch ME
+                if strcmp(error_strategy, 'skip')
+                    fprintf('  [SKIPPED] Failed to process file: %s\n  Error: %s\n', input_files{i}, ME.message);
+                else
+                    fprintf('  [HALTED] Failed to process file: %s\n  Error: %s\n', input_files{i}, ME.message);
                     rethrow(ME);
                 end
             end
-            
-            % Done processing file.
-            % Note: If the pipeline didn't include a 'pop_saveset', results are lost.
-            % The validation in Python should warn about this.
-            
-        catch ME
-            fprintf('  Failed to process file: %s\n  Error: %s\n', fname, ME.message);
+        end
+    else
+        for i = 1:num_files
+            fprintf('\nProcessing file %d/%d: %s\n', i, num_files, input_files{i});
+            try
+                process_single_file(input_files{i}, job.steps);
+            catch ME
+                if strcmp(error_strategy, 'skip')
+                    fprintf('  [SKIPPED] Failed to process file: %s\n  Error: %s\n', input_files{i}, ME.message);
+                else
+                    fprintf('  [HALTED] Failed to process file: %s\n  Error: %s\n', input_files{i}, ME.message);
+                    rethrow(ME);
+                end
+            end
         end
     end
     
     fprintf('\nJob completed.\n');
 
+end
+
+function process_single_file(file_path, steps)
+    [~, fname, fext] = fileparts(file_path);
+    current_EEG = []; 
+    
+    for s = 1:length(steps)
+        step = steps(s);
+        func_name = step.function;
+        params = step.parameters;
+        
+        fprintf('  -> Step %d: %s (%s)\n', s, func_name, step.label);
+        
+        args = {};
+        importer_funcs = {'pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig'};
+        is_importer = ismember(func_name, importer_funcs);
+        
+        if ~is_importer
+           if isempty(current_EEG)
+               error('Attempting to process %s but no EEG data loaded yet.', func_name);
+           end
+           args{end+1} = current_EEG;
+        end
+        
+        if is_importer && s == 1
+            if strcmp(func_name, 'pop_loadset')
+                 args{end+1} = 'filename';
+                 args{end+1} = [fname fext];
+                 args{end+1} = 'filepath';
+                 args{end+1} = fileparts(file_path);
+            elseif any(strcmp(func_name, {'pop_mffimport', 'pop_fileio', 'pop_biosig'}))
+                 args{end+1} = file_path;
+            end
+        end
+
+        if strcmp(func_name, 'pop_saveset')
+            if ~isfield(params, 'filename') || isempty(params.filename)
+                args{end+1} = 'filename';
+                if isfield(step, 'current_suffix')
+                    args{end+1} = [fname step.current_suffix fext];
+                else
+                    args{end+1} = [fname fext];
+                end
+            end
+        end
+        
+        mapped_args = {};
+        if isfield(step, 'arguments')
+            step_args = step.arguments;
+            if ~isempty(step_args)
+                if ~iscell(step_args)
+                    step_args = num2cell(step_args);
+                end
+                mapped_args = step_args(:)';
+            end
+        else
+            param_names = fieldnames(params);
+            for p = 1:length(param_names)
+                pname = param_names{p};
+                pval = params.(pname);
+                
+                if isempty(pval) || (ischar(pval) && strcmp(pval, 'off'))
+                    continue;
+                end
+                
+                if is_importer && s == 1
+                    if strcmp(func_name, 'pop_loadset') && (strcmp(pname, 'filename') || strcmp(pname, 'filepath'))
+                        continue;
+                    elseif strcmp(func_name, 'pop_mffimport') && strcmp(pname, 'mffFile')
+                        continue;
+                    elseif any(strcmp(func_name, {'pop_fileio', 'pop_biosig'})) && strcmp(pname, 'filename')
+                        continue;
+                    end
+                end
+                
+                if iscell(pval) && iscellstr(pval)
+                     % keep
+                elseif ischar(pval)
+                     % keep
+                end
+                
+                mapped_args{end+1} = pname;
+                mapped_args{end+1} = pval;
+            end
+        end
+        args = [args, mapped_args];
+        
+        try
+            current_EEG = feval(func_name, args{:});
+            
+            if isempty(current_EEG)
+                 error('Function %s returned empty result.', func_name);
+            end
+            
+            current_EEG = eeg_checkset(current_EEG);
+            
+            if isfield(step, 'save_at_this_step') && step.save_at_this_step
+                suffix = step.current_suffix;
+                save_name = [fname suffix fext];
+                fprintf('    (Automatic Save: %s)\n', save_name);
+                pop_saveset(current_EEG, 'filename', save_name, 'filepath', fileparts(file_path));
+            end                    
+        catch ME
+            warning('Error executing %s: %s', func_name, ME.message);
+            rethrow(ME);
+        end
+    end
 end

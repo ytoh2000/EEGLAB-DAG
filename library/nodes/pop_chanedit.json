@@ -15,7 +15,7 @@
         },
         {
             "name": "lookup",
-            "type": "string",
+            "type": "filepath",
             "description": "Look up standard locations (e.g. 'standard-10-5-cap385.elp').",
             "required": false,
             "default": ""

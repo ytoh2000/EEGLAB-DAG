@@ -127,6 +127,7 @@ class Sidebar(QWidget):
         if hasattr(self, '_dbl_timer') and self._dbl_timer.isActive():
             self._dbl_timer.stop()
         self._pending_step = None
+        
 
 class DraggableTreeWidget(QTreeWidget):
     def __init__(self, parent=None):

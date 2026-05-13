@@ -6,7 +6,10 @@ class Pipeline:
         self.edges = []
         self.settings = {
             "generate_report": True,
-            "stop_on_error": True,
+            "error_strategy": "halt",
+            "test_mode": False,
+            "test_sample_size": 1,
+            "parallel_processing": False,
             "output_folder": ""
         }
         
@@ -17,10 +20,27 @@ class Pipeline:
         self.edges.append(edge_data)
         
     def to_dict(self):
-        return {
+        visual_graph = {
             "settings": self.settings,
             "nodes": [n.to_dict() for n in self.nodes],
             "edges": [e.to_dict() for e in self.edges]
+        }
+        
+        # Attempt to compile the execution job
+        execution_job = None
+        try:
+            from src.model.job_exporter import JobExporter
+            exporter = JobExporter(self)
+            execution_job = exporter.build_job_dict()
+        except Exception as e:
+            # If validation fails, it's fine. We just save the visual state.
+            pass
+            
+        return {
+            "version": "1.0",
+            "name": "Pipeline",
+            "visual_graph": visual_graph,
+            "execution_job": execution_job
         }
         
     def save(self, filepath):
@@ -36,13 +56,28 @@ class Pipeline:
     @classmethod
     def from_dict(cls, data):
         pipeline = cls()
-        pipeline.settings = data.get("settings", {
+        
+        # Support new unified format, fallback to legacy
+        if "visual_graph" in data:
+            v_graph = data["visual_graph"]
+        else:
+            v_graph = data
+            
+        pipeline.settings = v_graph.get("settings", {
             "generate_report": True,
-            "stop_on_error": True,
+            "error_strategy": "halt",
+            "test_mode": False,
+            "test_sample_size": 1,
+            "parallel_processing": False,
             "output_folder": ""
         })
-        pipeline.nodes = [NodeData.from_dict(n) for n in data.get("nodes", [])]
-        pipeline.edges = [EdgeData.from_dict(e) for e in data.get("edges", [])]
+        
+        # Migrate old settings
+        if 'stop_on_error' in pipeline.settings:
+            stop = pipeline.settings.pop('stop_on_error')
+            pipeline.settings['error_strategy'] = 'halt' if stop else 'skip'
+        pipeline.nodes = [NodeData.from_dict(n) for n in v_graph.get("nodes", [])]
+        pipeline.edges = [EdgeData.from_dict(e) for e in v_graph.get("edges", [])]
         return pipeline
 
     def validate(self, check_files=False):

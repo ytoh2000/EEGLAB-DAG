@@ -10,12 +10,14 @@
         {
             "name": "EEG",
             "type": "dataset",
+            "arg_type": "positional",
             "description": "Input EEG structure",
             "required": true
         },
         {
             "name": "badchans",
             "type": "string",
+            "arg_type": "positional",
             "description": "Indices of channels to interpolate (e.g. [1 5]).",
             "required": true,
             "default": ""
@@ -23,6 +25,7 @@
         {
             "name": "method",
             "type": "enum",
+            "arg_type": "positional",
             "description": "Interpolation method",
             "required": false,
             "options": [

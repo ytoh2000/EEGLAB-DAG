@@ -10,12 +10,14 @@
         {
             "name": "EEG",
             "type": "dataset",
+            "arg_type": "positional",
             "description": "Input EEG structure",
             "required": true
         },
         {
             "name": "locutoff",
             "type": "float",
+            "arg_type": "positional",
             "description": "Lower edge of the frequency pass band (Hz). 0 for lowpass.",
             "required": true,
             "default": 0
@@ -23,6 +25,7 @@
         {
             "name": "hicutoff",
             "type": "float",
+            "arg_type": "positional",
             "description": "Higher edge of the frequency pass band (Hz). 0 for highpass.",
             "required": true,
             "default": 0
@@ -30,24 +33,28 @@
         {
             "name": "filtorder",
             "type": "integer",
+            "arg_type": "positional",
             "description": "Filter order. Leave empty for automatic.",
             "required": false
         },
         {
             "name": "revfilt",
             "type": "bool",
+            "arg_type": "positional",
             "description": "Invert filter (notch filter)",
             "default": false
         },
         {
             "name": "minphase",
             "type": "bool",
+            "arg_type": "positional",
             "description": "Use minimum-phase converted causal filter",
             "default": false
         },
         {
             "name": "plotfreqz",
             "type": "bool",
+            "arg_type": "positional",
             "description": "Plot frequency response",
             "default": false
         }

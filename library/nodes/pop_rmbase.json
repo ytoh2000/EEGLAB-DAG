@@ -10,12 +10,14 @@
         {
             "name": "EEG",
             "type": "dataset",
+            "arg_type": "positional",
             "description": "Input EEG structure",
             "required": true
         },
         {
             "name": "timerange",
             "type": "string",
+            "arg_type": "positional",
             "description": "Baseline latency range [min max] in ms (e.g. [-100 0]). Empty = whole epoch.",
             "required": false,
             "default": ""
@@ -23,6 +25,7 @@
         {
             "name": "pointrange",
             "type": "string",
+            "arg_type": "positional",
             "description": "Baseline points vector (e.g. 1:56). Overwritten by timerange.",
             "required": false,
             "default": ""

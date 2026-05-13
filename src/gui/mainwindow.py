@@ -1,9 +1,10 @@
-from PyQt6.QtWidgets import QMainWindow, QSplitter, QWidget, QVBoxLayout, QToolBar, QFileDialog, QMessageBox, QMenuBar, QMenu
+from PyQt6.QtWidgets import QMainWindow, QSplitter, QWidget, QVBoxLayout, QToolBar, QFileDialog, QMessageBox, QMenuBar, QMenu, QDockWidget
 from PyQt6.QtGui import QAction, QColor, QKeySequence
 from PyQt6.QtCore import Qt
 from src.gui.canvas import CanvasView
 from src.gui.sidebar import Sidebar
-from src.gui.pipeline_settings import PipelineSettingsDialog
+from src.gui.file_browser import FileBrowserWidget
+from src.gui.pipeline_settings_widget import PipelineSettingsWidget
 from src.gui.app_settings import AppSettingsManager, PreferencesDialog
 from src.gui.execution_dialog import ExecutionDialog
 
@@ -17,7 +18,10 @@ class MainWindow(QMainWindow):
         self.unsaved_changes = False
         self.pipeline_settings = {
             "generate_report": True,
-            "stop_on_error": True,
+            "error_strategy": "halt",
+            "test_mode": False,
+            "test_sample_size": 1,
+            "parallel_processing": False,
             "output_folder": ""
         }
         
@@ -53,7 +57,6 @@ class MainWindow(QMainWindow):
         # Canvas
         self.canvas = CanvasView()
         self.canvas.pipeline_changed.connect(self.on_pipeline_changed)
-        self.canvas.settings_requested = self.show_pipeline_settings
         self.right_layout.addWidget(self.canvas)
         
         # Connect Sidebar to Canvas
@@ -75,6 +78,28 @@ class MainWindow(QMainWindow):
         self.canvas.undo_stack.indexChanged.connect(self.on_pipeline_changed)
         
         self.update_title()
+        
+        # Initialize file browser path to current directory
+        
+        # Right Side File Browser Dock
+        self.file_dock = QDockWidget("File Browser", self)
+        self.file_browser = FileBrowserWidget()
+        self.file_browser.cwd_requested.connect(self.set_cwd)
+        self.file_dock.setWidget(self.file_browser)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.file_dock)
+        
+        # Right Side Pipeline Settings Dock
+        self.settings_dock = QDockWidget("Pipeline Settings", self)
+        self.settings_widget = PipelineSettingsWidget(self.pipeline_settings)
+        self.settings_widget.settings_changed.connect(self.on_settings_changed)
+        self.settings_dock.setWidget(self.settings_widget)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.settings_dock)
+        
+        # Split docks vertically (File browser on top, settings below)
+        self.splitDockWidget(self.file_dock, self.settings_dock, Qt.Orientation.Vertical)
+        
+        import os
+        self.set_cwd(os.getcwd())
 
     def _check_matlab_path(self):
         matlab = self.app_settings.get_matlab_path()
@@ -109,14 +134,7 @@ class MainWindow(QMainWindow):
         self.save_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         toolbar.addAction(self.save_action)
         
-        # Pipeline Settings
-        self.settings_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
-        toolbar.addAction(self.settings_action)
-        
-        # Export Job (Standalone)
-        self.export_action.setIcon(self._create_export_icon())
-        toolbar.addAction(self.export_action)
-        
+
         # Export MATLAB Script
         self.export_m_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileIcon))
         toolbar.addAction(self.export_m_action)
@@ -154,12 +172,10 @@ class MainWindow(QMainWindow):
         self.paper_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
         toolbar.addAction(self.paper_action)
 
-    def show_pipeline_settings(self):
-        dialog = PipelineSettingsDialog(self, self.pipeline_settings)
-        if dialog.exec():
-            self.pipeline_settings = dialog.get_settings()
-            self.unsaved_changes = True
-            self.update_title()
+    def on_settings_changed(self, new_settings):
+        self.pipeline_settings = new_settings
+        self.unsaved_changes = True
+        self.update_title()
 
     def import_from_paper(self):
         from src.llm.dialog import PaperImportDialog
@@ -170,6 +186,7 @@ class MainWindow(QMainWindow):
     def _on_paper_pipeline_ready(self, pipeline, warnings, reasoning):
         self.canvas.from_pipeline(pipeline)
         self.pipeline_settings = pipeline.settings
+        self.settings_widget.set_settings(self.pipeline_settings)
         self.current_file = None
         self.unsaved_changes = True
         self.update_title()
@@ -190,13 +207,14 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "No Templates", f"Template directory not found:\n{template_dir}")
             return
         
-        filename, _ = QFileDialog.getOpenFileName(self, "Select Pipeline Template", template_dir, "JSON Files (*.json)")
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Pipeline Template", template_dir, "Pipeline Files (*.eegpipe *.json)")
         if filename:
             try:
                 from src.model.pipeline import Pipeline
                 pipeline = Pipeline.load(filename)
                 self.canvas.from_pipeline(pipeline)
                 self.pipeline_settings = pipeline.settings
+                self.settings_widget.set_settings(self.pipeline_settings)
                 self.current_file = None  # Don't associate with template path
                 self.unsaved_changes = True
                 self.update_title()
@@ -231,25 +249,28 @@ class MainWindow(QMainWindow):
         
         return widget
 
-    def browse_cwd(self):
+    def set_cwd(self, new_dir):
         import os
-        new_dir = QFileDialog.getExistingDirectory(self, "Select Working Directory", self.cwd_edit.text())
-        if new_dir:
-            os.chdir(new_dir)
-            self.cwd_edit.setText(new_dir)
-            
-    def change_cwd_from_edit(self):
-        import os
-        new_dir = self.cwd_edit.text()
         if os.path.isdir(new_dir):
             try:
                 os.chdir(new_dir)
+                self.cwd_edit.setText(new_dir)
+                self.file_browser.set_path(new_dir)
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Could not change directory: {e}")
                 self.cwd_edit.setText(os.getcwd()) # Revert
         else:
              QMessageBox.warning(self, "Error", "Directory does not exist.")
              self.cwd_edit.setText(os.getcwd()) # Revert
+
+    def browse_cwd(self):
+        import os
+        new_dir = QFileDialog.getExistingDirectory(self, "Select Working Directory", self.cwd_edit.text())
+        if new_dir:
+            self.set_cwd(new_dir)
+            
+    def change_cwd_from_edit(self):
+        self.set_cwd(self.cwd_edit.text())
 
     def show_preferences(self):
         dialog = PreferencesDialog(self)
@@ -302,20 +323,13 @@ class MainWindow(QMainWindow):
         self.template_action.setToolTip("Start from a pipeline template")
         self.template_action.triggered.connect(self.new_from_template)
         
-        self.settings_action = QAction("Pipeline Settings", self)
-        self.settings_action.setToolTip("Configure pipeline-level settings")
-        self.settings_action.triggered.connect(self.show_pipeline_settings)
-        
-        self.export_action = QAction("Export Job", self)
-        self.export_action.setToolTip("Export Job File Only (JSON)")
-        self.export_action.triggered.connect(self.export_job)
-        
+
         self.export_m_action = QAction("Export MATLAB Script", self)
         self.export_m_action.setToolTip("Export Standalone MATLAB Script(s)")
         self.export_m_action.triggered.connect(self.export_matlab_script)
         
-        self.run_action = QAction("Run Job", self)
-        self.run_action.setToolTip("Export and Run Pipeline Job")
+        self.run_action = QAction("Run Pipeline", self)
+        self.run_action.setToolTip("Run Pipeline")
         self.run_action.triggered.connect(self.run_job)
         
         self.fit_action = QAction("Fit to View", self)
@@ -360,7 +374,6 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.save_action)
         file_menu.addAction(self.save_as_action)
         file_menu.addSeparator()
-        file_menu.addAction(self.export_action)
         file_menu.addAction(self.export_m_action)
         file_menu.addSeparator()
         file_menu.addAction(self.prefs_action)
@@ -386,7 +399,6 @@ class MainWindow(QMainWindow):
         
         # Pipeline Menu
         pipeline_menu = menubar.addMenu("Pipeline")
-        pipeline_menu.addAction(self.settings_action)
         pipeline_menu.addAction(self.run_action)
         
         # AI Assistant Menu
@@ -446,12 +458,11 @@ class MainWindow(QMainWindow):
         from src.model.job_exporter import JobExporter
         
         # Export temporary json
-        fd, temp_path = tempfile.mkstemp(suffix='.json', text=True)
+        fd, temp_path = tempfile.mkstemp(suffix='.eegpipe', text=True)
         os.close(fd)
         
         try:
-            exporter = JobExporter(pipeline)
-            exporter.export(temp_path)
+            pipeline.save(temp_path)
             
             eeglab_path = self.app_settings.get_eeglab_path()
             
@@ -474,32 +485,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to start MATLAB execution: {e}")
 
-    def export_job(self):
-        # 1. Validation (Structure + Files)
-        pipeline = self.canvas.to_pipeline()
-        pipeline.settings = self.pipeline_settings
-        is_valid, error_msg = pipeline.validate(check_files=True)
-        
-        if not is_valid:
-            QMessageBox.critical(self, "Validation Error", error_msg)
-            return
-
-        filename, _ = QFileDialog.getSaveFileName(self, "Export Job File", "", "JSON Files (*.json)")
-        if filename:
-            try:
-                from src.model.job_exporter import JobExporter
-                exporter = JobExporter(pipeline)
-                exporter.export(filename)
-                
-                if getattr(self, '_testing_run_after', False):
-                    # Keep run_after msg for legacy code if somehow passed
-                    msg = f"Job successfully exported onto:\n{filename}\n\nTo execute in EEGLAB:\n1. Click 'Execute Job' in the DAG menu.\n2. Or run: run_pipeline('{filename}')"
-                    QMessageBox.information(self, "Job Exported", msg)
-                else:
-                    QMessageBox.information(self, "Success", f"Job exported to:\n{filename}")
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Validation Error", f"Could not export job:\n{e}")
 
     def export_matlab_script(self):
         pipeline = self.canvas.to_pipeline()
@@ -589,12 +574,12 @@ class MainWindow(QMainWindow):
             if not os.path.exists(default_dir):
                 os.makedirs(default_dir, exist_ok=True)
                 
-            filename, _ = QFileDialog.getSaveFileName(self, "Save Pipeline", default_dir, "JSON Files (*.json)")
+            filename, _ = QFileDialog.getSaveFileName(self, "Save Pipeline", default_dir, "Pipeline Files (*.eegpipe);;JSON Files (*.json)")
             
         if filename:
             # Auto-append .json if user didn't type an extension
             if not os.path.splitext(filename)[1]:
-                filename += '.json'
+                filename += '.eegpipe'
             try:
                 pipeline.save(filename)
                 self.current_file = filename
@@ -624,13 +609,14 @@ class MainWindow(QMainWindow):
         if not os.path.exists(default_dir):
             os.makedirs(default_dir, exist_ok=True)
 
-        filename, _ = QFileDialog.getOpenFileName(self, "Open Pipeline", default_dir, "JSON Files (*.json)")
+        filename, _ = QFileDialog.getOpenFileName(self, "Open Pipeline", default_dir, "Pipeline Files (*.eegpipe *.json)")
         if filename:
             try:
                 from src.model.pipeline import Pipeline
                 pipeline = Pipeline.load(filename)
                 self.canvas.from_pipeline(pipeline)
                 self.pipeline_settings = pipeline.settings
+                self.settings_widget.set_settings(self.pipeline_settings)
                 self.current_file = filename
                 self.unsaved_changes = False
                 self.update_title()

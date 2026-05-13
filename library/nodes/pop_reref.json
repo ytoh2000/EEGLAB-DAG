@@ -10,12 +10,14 @@
         {
             "name": "EEG",
             "type": "dataset",
+            "arg_type": "positional",
             "description": "Input EEG structure",
             "required": true
         },
         {
             "name": "ref",
             "type": "string",
+            "arg_type": "positional",
             "description": "Reference: [] (empty) for average, or channel indices/names (e.g. 'Cz').",
             "required": true,
             "default": "[]"
