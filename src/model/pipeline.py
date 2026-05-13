@@ -132,7 +132,7 @@ class Pipeline:
         if not valid_sources:
              return False, "No valid source nodes (e.g. Create File Lists or Load Data) are specified at the start of the pipeline."
              
-        # 5. Output/Plotting Node Check
+        # 5. Output/Plotting Node Check (skip transfer nodes)
         output_nodes = [n for n in self.nodes if n.type in ('output', 'visualization')]
         if not output_nodes:
              return False, "No output (Save) or plotting nodes are specified."
@@ -170,7 +170,7 @@ class NodeData:
         pos (tuple):    (x, y) position on the canvas.
         params (dict):  User-configured parameters for this node.
     """
-    def __init__(self, node_id, node_type, label, pos=(0,0), params=None, function='', note='', save_output=False):
+    def __init__(self, node_id, node_type, label, pos=(0,0), params=None, function='', note='', save_output=False, transfer_inputs=None):
         self.id = node_id
         self.type = node_type
         self.function = function
@@ -179,6 +179,7 @@ class NodeData:
         self.params = params or {}
         self.note = note
         self.save_output = save_output
+        self.transfer_inputs = transfer_inputs or {}
         
     def to_dict(self):
         d = {
@@ -193,11 +194,13 @@ class NodeData:
             d["note"] = self.note
         if self.save_output:
             d["save_output"] = True
+        if self.transfer_inputs:
+            d["transfer_inputs"] = self.transfer_inputs
         return d
 
     @classmethod
     def from_dict(cls, data):
-        return cls(
+        node = cls(
             node_id=data["id"],
             node_type=data["type"],
             label=data["label"],
@@ -205,8 +208,10 @@ class NodeData:
             params=data["parameters"],
             function=data.get("function", ""),
             note=data.get("note", ""),
-            save_output=data.get("save_output", False)
+            save_output=data.get("save_output", False),
+            transfer_inputs=data.get("transfer_inputs", {})
         )
+        return node
 
 class EdgeData:
     def __init__(self, source_id, target_id):

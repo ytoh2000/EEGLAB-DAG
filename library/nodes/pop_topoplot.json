@@ -69,6 +69,13 @@
             "required": false,
             "default": "",
             "mode": "save"
+        },
+        {
+            "name": "use_pipeline_output",
+            "type": "bool",
+            "description": "If enabled, the plotting output (if save_as is used) will be directed to the global 'Output Folder'.",
+            "required": false,
+            "default": true
         }
     ],
     "outputs": [],

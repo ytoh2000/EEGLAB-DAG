@@ -18,9 +18,10 @@
             "name": "badchans",
             "type": "string",
             "arg_type": "positional",
-            "description": "Indices of channels to interpolate (e.g. [1 5]).",
+            "description": "Channel locations struct or indices of channels to interpolate (e.g. [1 5]). Can also receive a chanlocs struct from a Transfer node.",
             "required": true,
-            "default": ""
+            "default": "",
+            "accepts_transfer": true
         },
         {
             "name": "method",

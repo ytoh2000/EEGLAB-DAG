@@ -108,6 +108,31 @@ class JobExporter:
                  
             files = [f for f in files if f]
             
+        # Identify all transfer nodes and their connections
+        transfer_nodes = {n.id: n for n in self.pipeline.nodes if n.type == 'transfer'}
+        
+        # S_id -> list of {var_id, field}
+        extraction_map = {}
+        for e in self.pipeline.edges:
+            if e.target in transfer_nodes:
+                T_id = e.target
+                S_id = e.source
+                field = transfer_nodes[T_id].params.get('field', 'chanlocs')
+                var_name = f"trans_v_{T_id[:8].replace('-', '_')}"
+                if S_id not in extraction_map: extraction_map[S_id] = []
+                extraction_map[S_id].append({"var_name": var_name, "field": field})
+        
+        # Target_id -> list of {param, var_name}
+        injection_map = {}
+        for n in self.pipeline.nodes:
+            if hasattr(n, 'transfer_inputs') and n.transfer_inputs:
+                for param_name, info in n.transfer_inputs.items():
+                    T_id = info.get('source_node_id')
+                    if T_id in transfer_nodes:
+                        var_name = f"trans_v_{T_id[:8].replace('-', '_')}"
+                        if n.id not in injection_map: injection_map[n.id] = []
+                        injection_map[n.id].append({"param": param_name, "var_name": var_name})
+
         # Build step list
         steps = []
         cumulative_suffix = ""
@@ -169,6 +194,11 @@ class JobExporter:
             
             if node.save_output:
                 step_info["save_at_this_step"] = True
+                
+            if nid in extraction_map:
+                step_info["transfer_out"] = extraction_map[nid]
+            if nid in injection_map:
+                step_info["transfer_in"] = injection_map[nid]
                 
             steps.append(step_info)
             

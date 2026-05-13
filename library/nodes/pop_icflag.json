@@ -1,0 +1,79 @@
+{
+    "name": "Flag ICs (ICLabel)",
+    "function": "custom_icflag",
+    "type": "process",
+    "category": "Tools",
+    "description": "Flag independent components as artifacts based on ICLabel classification probabilities. Flagged components are marked for rejection in EEG.reject.gcompreject.",
+    "github_url": "https://github.com/sccn/ICLabel/blob/master/pop_icflag.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "Brain",
+            "type": "string",
+            "description": "Probability range to flag as Brain [min max]. Components in this range will be FLAGGED. Usually you want to flag components with LOW brain probability, e.g. [0 0.2]",
+            "required": false,
+            "default": "off",
+            "can_disable": true
+        },
+        {
+            "name": "Muscle",
+            "type": "string",
+            "description": "Probability range to flag as Muscle artifact [min max]. Default: [0.9 1]",
+            "required": false,
+            "default": "[0.9 1]",
+            "can_disable": true
+        },
+        {
+            "name": "Eye",
+            "type": "string",
+            "description": "Probability range to flag as Eye artifact [min max]. Default: [0.9 1]",
+            "required": false,
+            "default": "[0.9 1]",
+            "can_disable": true
+        },
+        {
+            "name": "Heart",
+            "type": "string",
+            "description": "Probability range to flag as Heart artifact [min max].",
+            "required": false,
+            "default": "off",
+            "can_disable": true
+        },
+        {
+            "name": "Line_Noise",
+            "type": "string",
+            "description": "Probability range to flag as Line Noise artifact [min max].",
+            "required": false,
+            "default": "off",
+            "can_disable": true
+        },
+        {
+            "name": "Channel_Noise",
+            "type": "string",
+            "description": "Probability range to flag as Channel Noise artifact [min max].",
+            "required": false,
+            "default": "off",
+            "can_disable": true
+        },
+        {
+            "name": "Other",
+            "type": "string",
+            "description": "Probability range to flag as Other artifact [min max].",
+            "required": false,
+            "default": "off",
+            "can_disable": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Output EEG structure with components flagged for rejection"
+        }
+    ]
+}

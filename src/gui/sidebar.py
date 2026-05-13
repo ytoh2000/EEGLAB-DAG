@@ -7,10 +7,11 @@ from src.gui.items import TYPE_COLORS
 
 # Match colors from items.py
 SIDEBAR_COLORS = {
-    'File':   QColor('#26A69A'),
-    'Edit':   QColor('#42A5F5'),
-    'Tools':  QColor('#FFA726'),
-    'Plot':   QColor('#AB47BC'),
+    'File':    QColor('#26A69A'),
+    'Edit':    QColor('#42A5F5'),
+    'Tools':   QColor('#FFA726'),
+    'Plot':    QColor('#AB47BC'),
+    'Utility': QColor('#78909C'),
 }
 
 def _resolve_color(step):
@@ -53,7 +54,7 @@ class Sidebar(QWidget):
     def refresh_items(self):
         self.tree.clear()
         
-        known_menus = ["File", "Edit", "Tools", "Plot"]
+        known_menus = ["File", "Edit", "Tools", "Plot", "Utility"]
         self.category_items = {}
         
         def get_root(name):
@@ -61,6 +62,7 @@ class Sidebar(QWidget):
                 root = QTreeWidgetItem(self.tree)
                 root.setText(0, name)
                 font = root.font(0)
+                font.setPointSize(11)
                 font.setBold(True)
                 root.setFont(0, font)
                 # Color the category header text

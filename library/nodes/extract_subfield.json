@@ -1,0 +1,36 @@
+{
+    "name": "Transfer EEG Subfield",
+    "function": "extract_subfield",
+    "type": "transfer",
+    "description": "Extract an EEG subfield (e.g. chanlocs) at this point and pass it to a downstream node",
+    "category": "Utility",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "arg_type": "positional",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "field",
+            "type": "enum",
+            "description": "EEG subfield to extract",
+            "required": true,
+            "options": [
+                "chanlocs",
+                "urchanlocs",
+                "chaninfo",
+                "event"
+            ],
+            "default": "chanlocs"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "subfield",
+            "type": "struct",
+            "description": "Extracted EEG subfield"
+        }
+    ]
+}

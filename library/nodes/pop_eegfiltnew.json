@@ -20,7 +20,7 @@
             "arg_type": "positional",
             "description": "Lower edge of the frequency pass band (Hz). 0 for lowpass.",
             "required": true,
-            "default": 0
+            "default": 1
         },
         {
             "name": "hicutoff",
@@ -28,7 +28,7 @@
             "arg_type": "positional",
             "description": "Higher edge of the frequency pass band (Hz). 0 for highpass.",
             "required": true,
-            "default": 0
+            "default": 80
         },
         {
             "name": "filtorder",

@@ -157,6 +157,10 @@ class CanvasView(QGraphicsView):
                 source.remove_edge(edge)
                 target.remove_edge(edge)
                 self.undo_stack.push(AddEdgeCommand(self, edge))
+                
+                # Handle transfer edge: if source is a transfer node, 
+                # auto-populate the target's accepts_transfer parameter
+                self._apply_transfer_connection(source, target)
             
             # Reset state
             self.connecting_node = None
@@ -369,13 +373,58 @@ class CanvasView(QGraphicsView):
                                   user_note=item.user_note, 
                                   readonly=is_linked_to_get_files,
                                   disabled_params=disabled_params,
-                                  save_output=item.save_output)
+                                  save_output=item.save_output,
+                                  transfer_inputs=item.transfer_inputs)
         if dialog.exec():
             new_params = dialog.get_params()
             new_note = dialog.note_edit.toPlainText()
             new_save = dialog.save_cb.isChecked() if dialog.save_cb else False
             if new_params != old_params or new_note != old_note or new_save != item.save_output:
                 self.undo_stack.push(ChangeParamsCommand(self, item, old_params, new_params, old_note, new_note, item.save_output, new_save))
+
+    def _apply_transfer_connection(self, source, target):
+        """When a transfer node is connected to a target, auto-populate the
+        target's accepts_transfer parameter with transfer metadata."""
+        source_type = source.step_def.get('type', '')
+        if source_type != 'transfer':
+            return
+        
+        # Find the first accepts_transfer parameter on the target
+        target_inputs = target.step_def.get('inputs', [])
+        for inp in target_inputs:
+            if inp.get('accepts_transfer'):
+                param_name = inp['name']
+                field = source.params.get('field', 'chanlocs')
+                target.transfer_inputs[param_name] = {
+                    'source_node_id': source.node_id,
+                    'source_label': source.label_text,
+                    'field': field
+                }
+                # Set a marker value in params so it's visible
+                target.params[param_name] = f'__transfer__:{field}'
+                target.refresh_tooltip()
+                break
+
+    def _remove_transfer_connection(self, source, target):
+        """Clean up transfer metadata when a transfer edge is removed."""
+        source_type = source.step_def.get('type', '')
+        if source_type != 'transfer':
+            return
+        
+        # Remove transfer metadata from target
+        to_remove = []
+        for param_name, info in target.transfer_inputs.items():
+            if info.get('source_node_id') == source.node_id:
+                to_remove.append(param_name)
+        for param_name in to_remove:
+            del target.transfer_inputs[param_name]
+            # Reset the param to default
+            for inp in target.step_def.get('inputs', []):
+                if inp['name'] == param_name:
+                    target.params[param_name] = inp.get('default', '')
+                    break
+        if to_remove:
+            target.refresh_tooltip()
 
     def open_url(self, url):
         QDesktopServices.openUrl(QUrl(url))
@@ -384,6 +433,8 @@ class CanvasView(QGraphicsView):
         self.undo_stack.push(RemoveNodeCommand(self, node))
 
     def remove_edge(self, edge):
+        # Clean up transfer connection metadata before removing
+        self._remove_transfer_connection(edge.source_node, edge.target_node)
         self.undo_stack.push(RemoveEdgeCommand(self, edge))
 
     def keyPressEvent(self, event):
@@ -541,7 +592,8 @@ class CanvasView(QGraphicsView):
                 # Store the function identifier directly on NodeData
                 node_type = item.step_def.get('type', 'process')
                 node_function = item.function_name
-                node_data = NodeData(item.node_id, node_type, item.label_text, (item.x(), item.y()), item.params, function=node_function, note=item.user_note)
+                node_data = NodeData(item.node_id, node_type, item.label_text, (item.x(), item.y()), item.params, function=node_function, note=item.user_note, transfer_inputs=item.transfer_inputs)
+                node_data.save_output = item.save_output
                 pipeline.add_node(node_data)
                 node_map[item.node_id] = item
                 
@@ -586,3 +638,10 @@ class CanvasView(QGraphicsView):
             if source and target:
                 edge = EdgeItem(source, target)
                 self.scene.addItem(edge)
+        
+        # Re-apply transfer connections from loaded edges
+        for edge_data in pipeline.edges:
+            source = node_db.get(edge_data.source)
+            target = node_db.get(edge_data.target)
+            if source and target:
+                self._apply_transfer_connection(source, target)

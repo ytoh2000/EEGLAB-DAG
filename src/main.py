@@ -29,6 +29,12 @@ sys.excepthook = exception_hook
 def main():
     logging.info("Starting EEGLAB-DAG Application")
     app = QApplication(sys.argv)
+    
+    # Set a cleaner, larger default font
+    font = app.font()
+    font.setPointSize(12)
+    app.setFont(font)
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

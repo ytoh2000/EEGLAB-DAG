@@ -27,6 +27,13 @@
             "default": ""
         },
         {
+            "name": "use_pipeline_output",
+            "type": "bool",
+            "description": "If enabled, the dataset will be saved to the global 'Output Folder' defined in the Pipeline Settings. This takes precedence over 'filepath'.",
+            "required": false,
+            "default": true
+        },
+        {
             "name": "savemode",
             "type": "enum",
             "description": "Save mode: 'resave', 'onefile' (set), or 'twofiles' (set+fdt).",

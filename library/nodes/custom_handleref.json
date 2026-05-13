@@ -1,0 +1,57 @@
+{
+    "name": "Handle Reference",
+    "function": "custom_handleref",
+    "type": "process",
+    "suffix": "REF",
+    "description": "Add or remove the reference channel (zero-filled). When adding, coordinates are auto-resolved from EEG.urchanlocs first.",
+    "category": "Edit",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "arg_type": "positional",
+            "description": "Input EEG structure",
+            "required": true
+        },
+        {
+            "name": "ref",
+            "type": "string",
+            "description": "Label of the reference channel",
+            "required": true,
+            "default": "Cz"
+        },
+        {
+            "name": "action",
+            "type": "enum",
+            "description": "Action to perform. 'auto': remove if present, add if missing. 'add': add zero-filled channel. 'remove': remove the channel.",
+            "required": true,
+            "options": [
+                "auto",
+                "add",
+                "remove"
+            ],
+            "default": "auto"
+        },
+        {
+            "name": "locfile",
+            "type": "filepath",
+            "description": "[Optional fallback] Channel location file (.ced, .sfp, .elp, .xyz, .loc). Priority: (1) EEG.urchanlocs is checked first automatically — safe, matching coordinate system. (2) This file is only used if not found there. (3) Label only if neither has the channel.",
+            "required": false,
+            "default": "",
+            "accepts_transfer": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Output EEG structure with reference channel added or removed"
+        },
+        {
+            "name": "action",
+            "type": "string",
+            "description": "Action performed: 'added' or 'removed'"
+        }
+    ],
+    "help_text": "CUSTOM_HANDLEREF - Add or remove the reference channel from an EEG dataset\n\nUsage:\n  >> [EEG, action] = custom_handleref(EEG, 'key', 'val');\n\nInputs:\n  EEG        - Input EEGLAB EEG structure\n\nOptional inputs:\n  'ref'      - [string] Label of the reference channel (e.g. 'Cz').\n               {default: 'Cz'}\n  'action'   - ['auto'|'add'|'remove'] Action to perform.\n               'auto'   - If the channel exists, remove it; if missing,\n                          add a zero-filled channel at the end. (default)\n               'add'    - Add a zero-filled reference channel. Errors if\n                          the channel already exists.\n               'remove' - Remove the reference channel. Errors if the\n                          channel is not found.\n  'locfile'  - [string] Path to a channel location file (.ced, .sfp,\n               .elp, .xyz, .loc). This is a FALLBACK only. See coordinate\n               lookup priority below. {default: ''}\n\nOutputs:\n  EEG        - Output EEGLAB EEG structure\n  action     - [string] Action that was performed: 'added' or 'removed'\n\nCoordinate lookup priority (when adding):\n  1. EEG.urchanlocs — Original channel locations preserved by EEGLAB.\n     These are guaranteed to match the dataset's coordinate system\n     (nose direction, units, etc.). This is checked AUTOMATICALLY.\n  2. locfile — External channel location file. Used only if the channel\n     is NOT found in EEG.urchanlocs. WARNING: nose direction and\n     coordinate conventions may differ from the dataset.\n  3. Label only — If neither source has the channel, it is added with\n     the label only (no coordinates).\n\nNotes:\n  When adding a reference channel, a row of zeros is appended to the\n  data matrix. This is appropriate for data that has already been\n  re-referenced (e.g. average reference), where the original reference\n  electrode carries a flat signal by definition.\n\nAuthor: Yong Oh, 2025"
+}

@@ -148,7 +148,7 @@ end
 function process_single_file(file_path, steps)
     [~, fname, fext] = fileparts(file_path);
     current_EEG = []; 
-    
+    transfers = struct(); % Store transferred subfields (e.g. chanlocs)
     for s = 1:length(steps)
         step = steps(s);
         func_name = step.function;
@@ -185,6 +185,19 @@ function process_single_file(file_path, steps)
                     args{end+1} = [fname step.current_suffix fext];
                 else
                     args{end+1} = [fname fext];
+                end
+            end
+        end
+        
+        % Injection: Apply any incoming transfers
+        if isfield(step, 'transfer_in')
+            tin = step.transfer_in;
+            if isstruct(tin)
+                for t = 1:length(tin)
+                    t_info = tin(t);
+                    if isfield(transfers, t_info.var_name)
+                        params.(t_info.param) = transfers.(t_info.var_name);
+                    end
                 end
             end
         end
@@ -238,6 +251,19 @@ function process_single_file(file_path, steps)
             end
             
             current_EEG = eeg_checkset(current_EEG);
+            
+            % Extraction: Save any outgoing transfers
+            if isfield(step, 'transfer_out')
+                tout = step.transfer_out;
+                if isstruct(tout)
+                    for t = 1:length(tout)
+                        t_info = tout(t);
+                        if isfield(current_EEG, t_info.field)
+                            transfers.(t_info.var_name) = current_EEG.(t_info.field);
+                        end
+                    end
+                end
+            end
             
             if isfield(step, 'save_at_this_step') && step.save_at_this_step
                 suffix = step.current_suffix;

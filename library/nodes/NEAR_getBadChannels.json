@@ -1,0 +1,154 @@
+{
+    "name": "NEAR Bad Channels",
+    "function": "NEAR_getBadChannels",
+    "type": "process",
+    "suffix": "BC",
+    "description": "Detect and remove bad channels using flatline, LOF, and periodogram criteria (NEAR pipeline)",
+    "category": "Tools",
+    "github_url": "https://github.com/vpKumaravel/NEAR/blob/72deb2600829dc423f04dbe158b4bc73ed81b324/NEAR_ChannelRejection-master/NEAR_getBadChannels.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "arg_type": "positional",
+            "description": "Band-pass filtered input EEG structure",
+            "required": true
+        },
+        {
+            "name": "isFlat",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Detect flat channels in the data",
+            "required": true,
+            "default": true
+        },
+        {
+            "name": "flatWin",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Maximum tolerated flatline duration in seconds",
+            "required": false,
+            "default": 5
+        },
+        {
+            "name": "isLOF",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Detect outlier channels using Local Outlier Factor (LOF) method",
+            "required": true,
+            "default": true
+        },
+        {
+            "name": "thresh_lof",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "LOF threshold to decide outlier channels",
+            "required": false,
+            "default": 2.5
+        },
+        {
+            "name": "dist_metric",
+            "type": "enum",
+            "arg_type": "positional",
+            "description": "Distance metric used in LOF algorithm",
+            "required": false,
+            "options": [
+                "seuclidean",
+                "euclidean",
+                "cityblock",
+                "cosine",
+                "mahalanobis"
+            ],
+            "default": "seuclidean"
+        },
+        {
+            "name": "isAdapt",
+            "type": "string",
+            "arg_type": "positional",
+            "description": "Max % of channels that can be removed. LOF threshold adapts upward if exceeded. Leave empty to disable adaptive thresholding.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "isPeriodogram",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Detect outlier channels using windowed periodogram analysis",
+            "required": true,
+            "default": false
+        },
+        {
+            "name": "frange",
+            "type": "string",
+            "arg_type": "positional",
+            "description": "Frequency range for periodogram analysis [LowFreq HighFreq] in Hz (e.g. '[1 20]')",
+            "required": false,
+            "default": "[1 20]"
+        },
+        {
+            "name": "winsize",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Window length for periodogram analysis in seconds",
+            "required": false,
+            "default": 1
+        },
+        {
+            "name": "winov",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Window overlap factor for periodogram analysis (0-1)",
+            "required": false,
+            "default": 0.66
+        },
+        {
+            "name": "pthresh",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Threshold to decide outlier channels based on periodogram analysis",
+            "required": false,
+            "default": 4.5
+        },
+        {
+            "name": "isPlot",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Plot LOF and periodogram energy trends for all channels",
+            "required": false,
+            "default": false
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Output EEG structure with bad channels detected and removed"
+        },
+        {
+            "name": "red_chFlat",
+            "type": "integer",
+            "description": "Indices of flat line channels"
+        },
+        {
+            "name": "red_ch",
+            "type": "integer",
+            "description": "Indices of outlier channels detected by LOF"
+        },
+        {
+            "name": "yellow_ch",
+            "type": "integer",
+            "description": "Indices of outlier channels detected by periodogram analysis"
+        },
+        {
+            "name": "LOF_vec",
+            "type": "float",
+            "description": "LOF value for each channel"
+        },
+        {
+            "name": "thresh_lof_update",
+            "type": "float",
+            "description": "Final adapted LOF threshold used"
+        }
+    ],
+    "help_text": "NEAR_getBadChannels() - detect and remove bad channels in the EEG data\n\nSyntax:\n  [signal, red_chFlat, red_ch, yellow_ch, LOF_vec] = NEAR_getBadChannels(EEG, Options, ...)\n\nInputs:\n  EEG            - Band-pass filtered input EEG\n  isFlat         - Set to 1 to detect flat channels in the data (Default: 1)\n  flatWin        - Maximum tolerated flatline duration in seconds (Default: 5s)\n  isLOF          - Set to 1 to detect outlier channels using LOF method (Default: 1)\n  thresh_lof     - Threshold to decide outlier channels (Default: 2.5)\n  dist_metric    - Distance metric used in LOF algorithm (Default: seuclidean)\n  isAdapt        - Maximum % of channels that can be removed. If the current\n                   thresh_lof removes more than this limit, thresh_lof value\n                   will be incremented by 1 until LOF doesn't remove more\n                   than the given % of channels.\n  isPeriodogram  - Set to 1 to detect outlier channels using windowed\n                   periodogram analysis (Default: 0)\n  frange         - Range of frequency values for periodogram analysis in the\n                   format [LowFreq HighFreq] in Hz (Default: [1 20] Hz)\n  winsize        - Window length for periodogram analysis in s (Default: 1s)\n  winov          - Window overlap factor for periodogram analysis (Default: 0.66)\n  pthresh        - Threshold to decide outlier channels based on periodogram\n                   analysis (Default: 4.5)\n  isPlot         - Set to 1 to see LOF and periodogram energy trends (Default: 1)\n\nOutputs:\n  signal         - Output EEG struct with bad channels detected and removed\n  red_chFlat     - List of flat line channels in the data (if any)\n  red_ch         - List of outlier channels detected by LOF (if any)\n  yellow_ch      - List of outlier channels detected by periodogram analysis (if any)\n  LOF_vec        - LOF value for each channel\n  thresh_lof_update - Final adapted LOF threshold\n\nAuthor: Velu Prabhakar Kumaravel (FBK & CIMEC-UNITN, Trento, Italy)"
+}

@@ -15,16 +15,21 @@ class CodeGenerator:
             G.add_edge(e.source, e.target)
             
         # Find sources (in-degree 0) and sinks (out-degree 0 or output/visualization)
-        sources = [n for n in G.nodes if G.in_degree(n) == 0]
-        end_nodes = [n for n in G.nodes if G.out_degree(n) == 0]
+        # We skip 'transfer' nodes for path calculation
+        proc_nodes = [n for n in self.pipeline.nodes if n.type != 'transfer']
+        proc_ids = [n.id for n in proc_nodes]
+        G_proc = G.subgraph(proc_ids).copy()
+        
+        sources = [n for n in G_proc.nodes if G_proc.in_degree(n) == 0]
+        end_nodes = [n for n in G_proc.nodes if G_proc.out_degree(n) == 0]
         if not end_nodes:
-            end_nodes = list(G.nodes) # fallback
+            end_nodes = list(G_proc.nodes) # fallback
             
         all_paths = []
         for src in sources:
             for end in end_nodes:
-                if nx.has_path(G, src, end):
-                    paths = list(nx.all_simple_paths(G, src, end))
+                if nx.has_path(G_proc, src, end):
+                    paths = list(nx.all_simple_paths(G_proc, src, end))
                     all_paths.extend(paths)
                 
         # If there are no paths (e.g. disconnected nodes), fallback to topological sort
@@ -72,7 +77,7 @@ class CodeGenerator:
             unique_id = f"{func}_{node_counts[func]}"
             path_nodes.append((unique_id, node))
             
-            if node.type == 'input':
+            if node.type == 'input' or node.type == 'transfer':
                 continue
                 
             code.append(f"% Params for {node.label}")
@@ -138,18 +143,47 @@ class CodeGenerator:
         code.append(indent + "[~, current_fname, ~] = fileparts(fileList{fL,3});")
         code.append(indent + "param.current_filename = current_fname;")
         
+        # Transfer tracking
+        transfer_vars = {} # transfer_node_id -> var_name
+        for n in self.pipeline.nodes:
+            if n.type == 'transfer':
+                transfer_vars[n.id] = f"trans_v_{n.id[:8].replace('-', '_')}"
+        
+        # Extraction points: source_node_id -> list of (var_name, field)
+        extraction_points = {}
+        for e in self.pipeline.edges:
+            if e.target in transfer_vars:
+                T_id = e.target
+                S_id = e.source
+                field = node_map[T_id].params.get('field', 'chanlocs')
+                if S_id not in extraction_points:
+                    extraction_points[S_id] = []
+                extraction_points[S_id].append((transfer_vars[T_id], field))
+
         importer_funcs = ['pop_loadset', 'pop_mffimport', 'pop_fileio', 'pop_biosig']
         
         for unique_id, node in path_nodes:
             if node.function == 'get_files':
                 continue
+            
+            # Injection: Apply any incoming transfers
+            for param_name, trans_info in node.transfer_inputs.items():
+                T_id = trans_info.get('source_node_id')
+                if T_id in transfer_vars:
+                    v_name = transfer_vars[T_id]
+                    code.append(indent + f"if exist('{v_name}', 'var'); param.{unique_id}.{param_name} = {v_name}; end")
                 
             if node.function in importer_funcs:
                 code.append(indent + f"[EEG, log] = step_importEEG(fileList{{fL,4}}, param, log, '{node.function}', '{unique_id}');")
             elif node.type == 'visualization':
-                code.append(indent + f"log = step_plot(EEG, param, log, '{node.function}', '{unique_id}');")
+                code.append(indent + f"log = step_plot(EEG, param.{unique_id}, log, '{node.function}', '{unique_id}', param);")
             else:
-                code.append(indent + f"[EEG, log] = step_process(EEG, param.{unique_id}, log, '{node.function}', '{unique_id}');")
+                code.append(indent + f"[EEG, log] = step_process(EEG, param.{unique_id}, log, '{node.function}', '{unique_id}', param);")
+            
+            # Extraction: Save any outgoing transfers
+            if node.id in extraction_points:
+                for v_name, field in extraction_points[node.id]:
+                    code.append(indent + f"if ~isempty(EEG) && isfield(EEG, '{field}'); {v_name} = EEG.{field}; end")
                 
         code.append(indent + "util_createReport(param, log);")
         
@@ -189,9 +223,14 @@ function [EEG, log] = step_importEEG(path_raw, param, log, funcName, stepKeyword
     log = util_wrapUpStep(EEG, param, log, stepKeyword, logKeyPair, success);
 end
 
-function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword)
+function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, param)
     if ~util_prevStepSuccess(log); return; end
     try
+        % Handle global output folder for pop_saveset
+        if strcmp(funcName, 'pop_saveset') && isfield(stepParam, 'use_pipeline_output') && stepParam.use_pipeline_output
+            stepParam.filepath = param.path_outFolder;
+        end
+
         fields = fieldnames(stepParam);
         args = {};
         
@@ -202,6 +241,9 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword)
         end
         
         for i=1:length(fields)
+            % Skip internal flags
+            if strcmp(fields{i}, 'use_pipeline_output'); continue; end
+            
             val = stepParam.(fields{i});
             if isempty(val); continue; end
             args{end+1} = fields{i};
@@ -221,13 +263,33 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword)
     log = util_wrapUpStep(EEG, stepParam, log, stepKeyword, logKeyPair, success);
 end
 
-function log = step_plot(EEG, param, log, funcName, stepKeyword)
+function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
     if ~util_prevStepSuccess(log); return; end
     try
-        % Execute plotting function. Assume custom plotting nodes take (EEG)
-        feval(funcName, EEG); 
+        fields = fieldnames(stepParam);
+        args = {EEG};
+        for i=1:length(fields)
+            if strcmp(fields{i}, 'use_pipeline_output'); continue; end
+            
+            val = stepParam.(fields{i});
+            if isempty(val); continue; end
+            
+            % Handle pipeline output folder for 'save_as' or similar path params
+            if isfield(stepParam, 'use_pipeline_output') && stepParam.use_pipeline_output
+                if ismember(fields{i}, {'save_as', 'filepath', 'filename'}) && ~isempty(val)
+                    [~, n, e] = fileparts(val);
+                    val = fullfile(param.path_outFolder, [n e]);
+                end
+            end
+            
+            args{end+1} = fields{i};
+            args{end+1} = val;
+        end
+
+        % Execute plotting function
+        feval(funcName, args{:}); 
         
-        % Save the figure to report/plot/PLOT_SPECIFIC_FOLDER_NAME/plot_name.jpg
+        % Auto-save to report folder
         figPath = fullfile(param.path_outFolder, 'report', 'plot', param.current_filename);
         if ~exist(figPath, 'dir'); mkdir(figPath); end
         

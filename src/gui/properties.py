@@ -3,11 +3,12 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QIntValidator, QFont
 
 class PropertiesDialog(QDialog):
-    def __init__(self, node_type, current_params, step_def, parent=None, user_note='', readonly=False, disabled_params=None, save_output=False):
+    def __init__(self, node_type, current_params, step_def, parent=None, user_note='', readonly=False, disabled_params=None, save_output=False, transfer_inputs=None):
         super().__init__(parent)
         self.readonly = readonly
         self.disabled_params = disabled_params or []
         self.save_output = save_output
+        self.transfer_inputs = transfer_inputs or {}
         self.setWindowTitle(f"Properties: {node_type}")
         self.resize(450, 500)
         
@@ -120,7 +121,7 @@ class PropertiesDialog(QDialog):
         help_display.setReadOnly(True)
 
         if help_text:
-            help_display.setFont(QFont('Consolas', 11))
+            help_display.setFont(QFont('Consolas', 12))
             help_display.setPlainText(help_text)
         else:
             help_display.setPlainText('Not available')
@@ -135,6 +136,7 @@ class PropertiesDialog(QDialog):
         required = inp.get('required', False)
         default = inp.get('default')
         can_disable = inp.get('can_disable', False)
+        accepts_transfer = inp.get('accepts_transfer', False)
         
         # Capitalize first letter only, preserve rest of the string
         label_text = name[0].upper() + name[1:] if name else ""
@@ -143,6 +145,26 @@ class PropertiesDialog(QDialog):
         label.setToolTip(desc)
         
         val = self.params.get(name, default)
+        
+        # Check if this parameter is receiving a transfer connection
+        if accepts_transfer and name in self.transfer_inputs:
+            transfer_info = self.transfer_inputs[name]
+            field = transfer_info.get('field', 'chanlocs')
+            source_label = transfer_info.get('source_label', 'Transfer')
+            
+            # Render as a read-only styled label
+            transfer_label = QLabel(f"\u2190 EEG.{field} from [{source_label}]")
+            transfer_label.setStyleSheet(
+                "QLabel { background-color: #E3F2FD; color: #1565C0; "
+                "padding: 4px 8px; border: 1px solid #90CAF9; border-radius: 4px; "
+                "font-weight: bold; }"
+            )
+            transfer_label.setToolTip(f"This parameter receives EEG.{field} from the connected Transfer node. Remove the transfer edge to edit manually.")
+            
+            # Store as a special transfer widget so get_params preserves the marker value
+            self.inputs[name] = {'widget': transfer_label, 'type': 'transfer', 'can_disable': False, 'label': label}
+            layout.addRow(label, transfer_label)
+            return
         
         # Helper to determine if the parameter is currently "off"
         is_off = False
@@ -240,6 +262,11 @@ class PropertiesDialog(QDialog):
             if can_disable and checkbox and not checkbox.isChecked():
                 new_params[name] = 'off'
                 continue # Skip value retrieval
+            
+            # Preserve transfer marker value (read-only label, not editable)
+            if w_type == 'transfer':
+                new_params[name] = self.params.get(name, '')
+                continue
             
             if isinstance(widget, QLineEdit):
                 text_val = widget.text()

@@ -16,6 +16,7 @@ TYPE_COLORS = {
     'output':        QColor('#EF5350'),  # Red
     'visualization': QColor('#AB47BC'),  # Purple
     'placeholder':   QColor('#757575'),  # Gray — unknown/unavailable
+    'transfer':      QColor('#78909C'),  # Blue-gray — utility/transfer nodes
 }
 
 HEADER_HEIGHT = 26
@@ -44,6 +45,7 @@ class NodeItem(QGraphicsItem):
         self.edges = []
         self.user_note = ''
         self.save_output = False
+        self.transfer_inputs = {}  # param_name -> {source_node_id, field}
         
         # Flags
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
@@ -113,7 +115,7 @@ class NodeItem(QGraphicsItem):
         
         # Label in header (white text, centered, word-wrapped for long names)
         painter.setPen(QColor('#ffffff'))
-        painter.setFont(QFont('Segoe UI', 8, QFont.Weight.Bold))
+        painter.setFont(QFont('Segoe UI', 12, QFont.Weight.Bold))
         header_rect = QRectF(4, 1, self.width - 8, HEADER_HEIGHT)
         painter.drawText(header_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter | Qt.TextFlag.TextWordWrap, self.label_text)
         
@@ -121,7 +123,7 @@ class NodeItem(QGraphicsItem):
         body_y = HEADER_HEIGHT + 2
         if self.function_name:
             painter.setPen(QColor('#888888'))
-            painter.setFont(QFont('Segoe UI', 8))
+            painter.setFont(QFont('Segoe UI', 11))
             func_rect = QRectF(6, body_y, self.width - 12, 16)
             painter.drawText(func_rect, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter, self.function_name)
             body_y += 16
@@ -129,7 +131,7 @@ class NodeItem(QGraphicsItem):
         # User note (italic, blue, up to 2 lines) 
         if self.user_note:
             painter.setPen(QColor('#5C6BC0'))
-            note_font = QFont('Segoe UI', 7)
+            note_font = QFont('Segoe UI', 10)
             note_font.setItalic(True)
             painter.setFont(note_font)
             note_rect = QRectF(6, body_y, self.width - 12, self.height - body_y - 2)
@@ -309,7 +311,15 @@ class EdgeItem(QGraphicsPathItem):
         # Check if this is a wrap-around edge (target is left of source)
         if end_pos.x() < start_pos.x() - 20:
             # Route between rows: go down from source row, across, then down to target
-            drop = 70  # Centers the crossing line between the two rows
+            
+            # Use hash of node IDs to generate a stable, unique offset to prevent superimposition
+            import hashlib
+            import random
+            seed = (self.source_node.node_id + self.target_node.node_id).encode()
+            jitter = random.uniform(-10, 10)
+            offset = (int(hashlib.md5(seed).hexdigest(), 16) % 50) - 25 + jitter # Range [-25, 25]
+            
+            drop = 70 + offset  # Centers the crossing line between rows with unique spacing
             mid_y = start_pos.y() + drop
             
             # Source output → right then down
@@ -345,10 +355,16 @@ class EdgeItem(QGraphicsPathItem):
     def paint(self, painter, option, widget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
+        # Check if this is a utility connection (transfer node involved)
+        is_utility = self.source_node.step_type == 'transfer' or self.target_node.step_type == 'transfer'
+        
         if self._insert_hover:
             pen = QPen(QColor('#4CAF50'), 3)  # Green glow
         elif self.isSelected():
             pen = QPen(QColor('#ff9900'), 3)
+        elif is_utility:
+            # Blue-gray dashed line for utility connections
+            pen = QPen(QColor('#90A4AE'), 2, Qt.PenStyle.DashLine)
         else:
             pen = QPen(QColor('#555555'), 2)
             
@@ -383,19 +399,23 @@ class EdgeItem(QGraphicsPathItem):
         
         # Output label at midpoint
         if self._output_label:
-            painter.setFont(QFont('Segoe UI', 7))
+            painter.setFont(QFont('Segoe UI', 10))
             fm = painter.fontMetrics()
-            text_width = fm.horizontalAdvance(self._output_label)
-            text_height = fm.height()
             
-            pill_w = text_width + 10
-            pill_h = text_height + 4
+            # Calculate wrapped text size
+            MAX_WIDTH = 120
+            text_rect = fm.boundingRect(0, 0, MAX_WIDTH, 1000, 
+                                        Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, 
+                                        self._output_label)
+            
+            pill_w = text_rect.width() + 14
+            pill_h = text_rect.height() + 8
             pill_x = self._label_pos.x() - pill_w / 2
-            pill_y = self._label_pos.y() - pill_h / 2 - 8  # offset above edge
+            pill_y = self._label_pos.y() - pill_h / 2 - 12
             
             # Pill background — green highlight when insert-hover active
             pill = QPainterPath()
-            pill.addRoundedRect(pill_x, pill_y, pill_w, pill_h, 6, 6)
+            pill.addRoundedRect(pill_x, pill_y, pill_w, pill_h, 8, 8)
             if self._insert_hover:
                 painter.setPen(QPen(QColor('#4CAF50'), 2))
                 painter.setBrush(QBrush(QColor(200, 255, 200, 240)))
@@ -404,8 +424,9 @@ class EdgeItem(QGraphicsPathItem):
                 painter.setBrush(QBrush(QColor(255, 255, 255, 220)))
             painter.drawPath(pill)
             
-            # Text
+            # Text with wrapping
             painter.setPen(QColor('#333333') if self._insert_hover else QColor('#666666'))
-            text_rect = QRectF(pill_x, pill_y, pill_w, pill_h)
-            painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, self._output_label)
+            painter.drawText(QRectF(pill_x + 7, pill_y + 4, text_rect.width(), text_rect.height()), 
+                             Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, 
+                             self._output_label)
 

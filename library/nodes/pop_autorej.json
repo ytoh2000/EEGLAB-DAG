@@ -1,0 +1,88 @@
+{
+    "name": "Autoreject",
+    "function": "pop_autorej",
+    "type": "process",
+    "suffix": "AR",
+    "description": "Automatically reject bad epochs using probability and kurtosis criteria",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/95bc4ab543331a4d5725747ece733434de6ce159/functions/popfunc/pop_autorej.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "arg_type": "positional",
+            "description": "Input EEG structure (must be epoched)",
+            "required": true
+        },
+        {
+            "name": "threshold",
+            "type": "float",
+            "description": "Threshold limit for detection of extremely large fluctuations (uV)",
+            "required": false,
+            "default": 1000
+        },
+        {
+            "name": "electrodes",
+            "type": "string",
+            "description": "Channel indices for detection of improbable data (e.g. '[1 2 3]'). Default: all channels.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "icacomps",
+            "type": "string",
+            "description": "ICA component indices to use instead of channel data (e.g. '[1 2 3]'). Default: none.",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "startprob",
+            "type": "float",
+            "description": "Probability threshold (in std. dev.) for detection of improbable data",
+            "required": false,
+            "default": 5
+        },
+        {
+            "name": "maxrej",
+            "type": "float",
+            "description": "Maximum % of total trials to reject per iteration",
+            "required": false,
+            "default": 5
+        },
+        {
+            "name": "eegplot",
+            "type": "enum",
+            "description": "Allow for visual inspection of rejected trials",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "off"
+        },
+        {
+            "name": "nogui",
+            "type": "enum",
+            "description": "Do not pop up a GUI window to ask for input parameters",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "on"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "EEG structure with bad epochs removed"
+        },
+        {
+            "name": "rmepochs",
+            "type": "integer",
+            "description": "Indices of rejected trials"
+        }
+    ],
+    "help_text": "POP_AUTOREJ - perform automatic artifact epoch detection and rejection\n\nUsage:\n  >> [EEG, rmepochs] = pop_autorej( EEG, 'key', 'val');\n\nInputs:\n  EEG       - input EEG structure where epochs have been extracted.\n\nOptional inputs:\n  'threshold'  - [float] Threshold limit for detection of extremely large\n                 fluctuations (uV) {default: 1000}\n  'electrodes' - [integer] Use these channel indices for detection\n                 of improbable data {default: all channels}\n  'icacomps'   - [integer] Use these component activities (instead of\n                 channel data) for detection of improbable data.\n                 {default: none}\n  'startprob'  - [float] Probability threshold (in std. dev.) for\n                 detection of improbable data {default: 5}\n  'maxrej'     - [float] Maximum % of total trials to reject per\n                 iteration {default: 5}\n  'eegplot'    - ['on'|'off'] Allow for visual inspection of rejected\n                 trials {default: 'off' if called from the command line,\n                 'on' if called from the gui}\n  'nogui'      - ['on'|'off'] Do not pop up a gui window to ask for\n                 input parameters {default: 'off'}\n\nOutputs:\n  EEG          - EEGLAB data structure\n  rmepochs     - [integer] rejected trial indices\n\nFunction description:\n  POP_AUTOREJ first detects extremely large potential fluctuations;\n  this is mostly to detect artifacts from electrical surges or other\n  unreasonably large amplitude events. Then it applies the following.\n  The function rejects data epochs containing data values outside a\n  given standard deviation (s.d.) threshold entered by the user (e.g.,\n  3 s.d.'s). In each iteration, if the number of epochs that are\n  thus marked for rejection are fewer than 'maxrej' (by default, 5%), it\n  then rejects the beyond-threshold data epochs and iterates. If the number\n  of epochs marked for rejection is more than 5% of the total number\n  of data epochs, it does not reject them, but instead increases the\n  s.d. threshold by 0.5 s.d. and iterates. When no more data epochs are\n  found to exceed the current s.d. threshold, it lowers the threshold\n  by 0.5 s.d. and continues to iterate until either no more epochs are\n  rejected or until 8 iterations have been performed.\n\nAuthors: Julie Onton and Arnaud Delorme, SCCN/INC/UCSD, 2007-"
+}
