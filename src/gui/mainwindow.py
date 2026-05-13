@@ -479,11 +479,17 @@ class MainWindow(QMainWindow):
                 base_dir = os.path.dirname(os.path.abspath(__file__))
                 src_matlab = os.path.abspath(os.path.join(base_dir, '..', 'matlab'))
             
+            # Convert paths to use forward slashes to avoid escape character issues in MATLAB -batch
+            if eeglab_path:
+                eeglab_path = eeglab_path.replace('\\', '/')
+            src_matlab = src_matlab.replace('\\', '/')
+            temp_path_fwd = temp_path.replace('\\', '/')
+            
             # Construct MATLAB command
             if eeglab_path:
-                cmd_inner = f"addpath('{eeglab_path}'); eeglab nogui; addpath('{src_matlab}'); run_pipeline('{temp_path}'); exit;"
+                cmd_inner = f"addpath('{eeglab_path}'); eeglab nogui; addpath('{src_matlab}'); run_pipeline('{temp_path_fwd}'); exit;"
             else:
-                cmd_inner = f"addpath('{src_matlab}'); run_pipeline('{temp_path}'); exit;"
+                cmd_inner = f"addpath('{src_matlab}'); run_pipeline('{temp_path_fwd}'); exit;"
                 
             # Pass working directory to execution dialog so the user can open it
             output_folder = self.cwd_edit.text()
