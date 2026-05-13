@@ -12,8 +12,7 @@ class PipelineSettingsWidget(QWidget):
             "error_strategy": "halt",
             "test_mode": False,
             "test_sample_size": 1,
-            "parallel_processing": False,
-            "output_folder": ""
+            "parallel_processing": False
         }
         
         layout = QVBoxLayout(self)
@@ -68,29 +67,7 @@ class PipelineSettingsWidget(QWidget):
         
         layout.addWidget(test_group)
         
-        # Output Folder Group
-        out_group = QGroupBox("Output Folder (Optional)")
-        out_layout = QHBoxLayout(out_group)
-        
-        self.out_edit = QLineEdit(self.settings.get("output_folder", ""))
-        self.out_edit.setPlaceholderText("Default: Working Directory")
-        self.out_edit.textChanged.connect(self._emit_change)
-        
-        self.out_btn = QPushButton("...")
-        self.out_btn.setFixedWidth(30)
-        self.out_btn.clicked.connect(self._browse_output)
-        
-        out_layout.addWidget(self.out_edit)
-        out_layout.addWidget(self.out_btn)
-        
-        layout.addWidget(out_group)
-        
         layout.addStretch()
-        
-    def _browse_output(self):
-        folder = QFileDialog.getExistingDirectory(self, "Select Output Folder", self.out_edit.text())
-        if folder:
-            self.out_edit.setText(folder)
             
     def _emit_change(self):
         self.settings = {
@@ -98,8 +75,7 @@ class PipelineSettingsWidget(QWidget):
             "error_strategy": "skip" if self.error_combo.currentIndex() == 1 else "halt",
             "test_mode": self.test_cb.isChecked(),
             "test_sample_size": self.sample_spin.value(),
-            "parallel_processing": self.parallel_cb.isChecked(),
-            "output_folder": self.out_edit.text()
+            "parallel_processing": self.parallel_cb.isChecked()
         }
         self.settings_changed.emit(self.settings)
 
@@ -113,7 +89,6 @@ class PipelineSettingsWidget(QWidget):
         self.error_combo.blockSignals(True)
         self.test_cb.blockSignals(True)
         self.sample_spin.blockSignals(True)
-        self.out_edit.blockSignals(True)
         
         self.report_cb.setChecked(settings.get("generate_report", True))
         self.parallel_cb.setChecked(settings.get("parallel_processing", False))
@@ -127,11 +102,8 @@ class PipelineSettingsWidget(QWidget):
         self.sample_spin.setValue(settings.get("test_sample_size", 1))
         self.sample_spin.setEnabled(self.test_cb.isChecked())
         
-        self.out_edit.setText(settings.get("output_folder", ""))
-        
         self.report_cb.blockSignals(False)
         self.parallel_cb.blockSignals(False)
         self.error_combo.blockSignals(False)
         self.test_cb.blockSignals(False)
         self.sample_spin.blockSignals(False)
-        self.out_edit.blockSignals(False)

@@ -171,6 +171,11 @@ class MainWindow(QMainWindow):
         # Import from Paper (LLM)
         self.paper_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
         toolbar.addAction(self.paper_action)
+        
+        # Preferences
+        self.prefs_action.setIcon(self._create_gear_icon())
+        self.prefs_action.setToolTip("Preferences")
+        toolbar.addAction(self.prefs_action)
 
     def on_settings_changed(self, new_settings):
         self.pipeline_settings = new_settings
@@ -480,7 +485,10 @@ class MainWindow(QMainWindow):
             else:
                 cmd_inner = f"addpath('{src_matlab}'); run_pipeline('{temp_path}'); exit;"
                 
-            self.execution_dialog = ExecutionDialog(self)
+            # Pass working directory to execution dialog so the user can open it
+            output_folder = self.cwd_edit.text()
+                
+            self.execution_dialog = ExecutionDialog(output_folder, self)
             self.execution_dialog.start_execution(matlab_path, ["-batch", cmd_inner])
             
         except Exception as e:
@@ -717,5 +725,38 @@ class MainWindow(QMainWindow):
         
         polygon = QPolygonF([QPointF(6, 4), QPointF(20, 12), QPointF(6, 20)])
         painter.drawPolygon(polygon)
+        
+        painter.end()
+        return QIcon(pixmap)
+        
+    def _create_gear_icon(self):
+        from PyQt6.QtGui import QPixmap, QPainter, QBrush, QColor, QIcon, QPen
+        from PyQt6.QtCore import Qt, QPointF
+        import math
+        pixmap = QPixmap(24, 24)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        painter.setPen(QPen(QColor(80, 80, 80), 2))
+        painter.setBrush(QBrush(QColor(80, 80, 80)))
+        
+        cx, cy = 12, 12
+        num_teeth = 8
+        outer_r = 9
+        inner_r = 6
+        
+        for i in range(num_teeth):
+            angle = i * (2 * math.pi / num_teeth)
+            x = cx + outer_r * math.cos(angle)
+            y = cy + outer_r * math.sin(angle)
+            painter.drawEllipse(QPointF(x, y), 2.5, 2.5)
+            
+        painter.drawEllipse(QPointF(cx, cy), inner_r, inner_r)
+        
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.drawEllipse(QPointF(cx, cy), 3.0, 3.0)
+        
         painter.end()
         return QIcon(pixmap)

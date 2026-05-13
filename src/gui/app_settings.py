@@ -17,10 +17,23 @@ class AppSettingsManager:
         self.settings.setValue("matlab_path", path)
         
     def get_eeglab_path(self):
-        return self.settings.value("eeglab_path", "")
+        path = self.settings.value("eeglab_path", "")
+        if not path:
+            path = self.auto_discover_eeglab()
+        return path
         
     def set_eeglab_path(self, path):
         self.settings.setValue("eeglab_path", path)
+
+    def auto_discover_eeglab(self):
+        """Attempts to find the EEGLAB folder if installed as a plugin."""
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        # __file__ is src/gui/app_settings.py
+        # We want to go up 4 levels: src -> EEGLAB-DAG -> plugins -> eeglab
+        eeglab_dir = os.path.abspath(os.path.join(base_dir, '..', '..', '..', '..'))
+        if os.path.exists(os.path.join(eeglab_dir, 'eeglab.m')):
+            return eeglab_dir
+        return ""
 
     def auto_discover_matlab(self):
         """Attempts to find the MATLAB executable on the system."""

@@ -9,8 +9,7 @@ class Pipeline:
             "error_strategy": "halt",
             "test_mode": False,
             "test_sample_size": 1,
-            "parallel_processing": False,
-            "output_folder": ""
+            "parallel_processing": False
         }
         
     def add_node(self, node_data):
