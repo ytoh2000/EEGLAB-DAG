@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "No Templates", f"Template directory not found:\n{template_dir}")
             return
         
-        filename, _ = QFileDialog.getOpenFileName(self, "Select Pipeline Template", template_dir, "Pipeline Files (*.eegpipe *.json)")
+        filename, _ = QFileDialog.getOpenFileName(self, "Select Pipeline Template", template_dir, "JSON Files (*.json)")
         if filename:
             try:
                 from src.model.pipeline import Pipeline
@@ -458,7 +458,7 @@ class MainWindow(QMainWindow):
         from src.model.job_exporter import JobExporter
         
         # Export temporary json
-        fd, temp_path = tempfile.mkstemp(suffix='.eegpipe', text=True)
+        fd, temp_path = tempfile.mkstemp(suffix='.json', text=True)
         os.close(fd)
         
         try:
@@ -575,12 +575,11 @@ class MainWindow(QMainWindow):
             if not os.path.exists(default_dir):
                 os.makedirs(default_dir, exist_ok=True)
                 
-            filename, _ = QFileDialog.getSaveFileName(self, "Save Pipeline", default_dir, "Pipeline Files (*.eegpipe);;JSON Files (*.json)")
+            filename, _ = QFileDialog.getSaveFileName(self, "Save Pipeline", default_dir, "JSON Files (*.json)")
             
         if filename:
-            # Auto-append .json if user didn't type an extension
-            if not os.path.splitext(filename)[1]:
-                filename += '.eegpipe'
+            if not filename.endswith('.json'):
+                filename += '.json'
             try:
                 pipeline.save(filename)
                 self.current_file = filename
@@ -610,7 +609,7 @@ class MainWindow(QMainWindow):
         if not os.path.exists(default_dir):
             os.makedirs(default_dir, exist_ok=True)
 
-        filename, _ = QFileDialog.getOpenFileName(self, "Open Pipeline", default_dir, "Pipeline Files (*.eegpipe *.json)")
+        filename, _ = QFileDialog.getOpenFileName(self, "Open Pipeline", default_dir, "JSON Files (*.json)")
         if filename:
             try:
                 from src.model.pipeline import Pipeline

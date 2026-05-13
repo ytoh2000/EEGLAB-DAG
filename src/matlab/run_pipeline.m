@@ -40,7 +40,28 @@ function run_pipeline(job_file)
     str_json = char(raw_json');
     fclose(fid);
     
-    job = jsondecode(str_json);
+    raw_job = jsondecode(str_json);
+    
+    % Support unified format or legacy format
+    if isfield(raw_job, 'execution_job')
+        if isempty(raw_job.execution_job)
+            error('This pipeline is incomplete and cannot be executed. Please fix errors in the DAG Editor.');
+        end
+        job = raw_job.execution_job;
+        
+        if isfield(raw_job, 'visual_graph') && isfield(raw_job.visual_graph, 'settings')
+            settings = raw_job.visual_graph.settings;
+        else
+            settings = struct();
+        end
+    else
+        job = raw_job;
+        if isfield(job, 'settings')
+            settings = job.settings;
+        else
+            settings = struct();
+        end
+    end
     
     % Validate job structure
     if ~isfield(job, 'files') || ~isfield(job, 'steps')
@@ -54,10 +75,7 @@ function run_pipeline(job_file)
     eeglab nogui;
     
     % 3. Extract Settings
-    settings = struct();
-    if isfield(job, 'settings')
-        settings = job.settings;
-    end
+    % 'settings' was already populated above during parsing
     
     error_strategy = 'halt';
     if isfield(settings, 'error_strategy')
