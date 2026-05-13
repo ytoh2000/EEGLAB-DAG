@@ -466,6 +466,7 @@ class MainWindow(QMainWindow):
             
             eeglab_path = self.app_settings.get_eeglab_path()
             
+            import sys
             if getattr(sys, 'frozen', False):
                 base_dir = os.path.dirname(sys.executable)
                 src_matlab = os.path.abspath(os.path.join(base_dir, '..', '..', '..', 'src', 'matlab'))
