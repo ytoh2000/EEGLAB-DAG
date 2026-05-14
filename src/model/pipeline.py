@@ -9,7 +9,15 @@ class Pipeline:
             "error_strategy": "halt",
             "test_mode": False,
             "test_sample_size": 1,
-            "parallel_processing": False
+            "parallel_processing": False,
+            "pipeline_id": "DAG",
+            "use_global_savepath": False,
+            "global_savepath": "",
+            "bids_dataset_name": "",
+            "bids_authors": "",
+            "bids_default_task": "",
+            "bids_modality": "eeg",
+            "bids_anonymize": False
         }
         
     def add_node(self, node_data):
@@ -68,7 +76,15 @@ class Pipeline:
             "test_mode": False,
             "test_sample_size": 1,
             "parallel_processing": False,
-            "output_folder": ""
+            "output_folder": "",
+            "pipeline_id": "DAG",
+            "use_global_savepath": False,
+            "global_savepath": "",
+            "bids_dataset_name": "",
+            "bids_authors": "",
+            "bids_default_task": "",
+            "bids_modality": "eeg",
+            "bids_anonymize": False
         })
         
         # Migrate old settings

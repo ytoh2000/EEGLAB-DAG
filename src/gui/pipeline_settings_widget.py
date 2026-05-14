@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QCheckBox, QComboBox, QSpinBox, QHBoxLayout, QLineEdit, QPushButton, QFileDialog, QGroupBox, QLabel
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QCheckBox, QComboBox, QSpinBox, QHBoxLayout, QLineEdit, QPushButton, QFileDialog, QGroupBox, QLabel, QTabWidget
+from PyQt6.QtCore import pyqtSignal, Qt
 
 class PipelineSettingsWidget(QWidget):
     settings_changed = pyqtSignal(dict)
@@ -12,11 +12,21 @@ class PipelineSettingsWidget(QWidget):
             "error_strategy": "halt",
             "test_mode": False,
             "test_sample_size": 1,
-            "parallel_processing": False
+            "parallel_processing": False,
+            "use_global_savepath": False,
+            "global_savepath": "",
+            "pipeline_id": "DAG"
         }
         
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.tabs = QTabWidget()
+        
+        # --- TAB 1: Execution Settings ---
+        execution_tab = QWidget()
+        exec_layout = QVBoxLayout(execution_tab)
+        exec_layout.setContentsMargins(8, 8, 8, 8)
         
         # General Group
         general_group = QGroupBox("General Options")
@@ -39,8 +49,19 @@ class PipelineSettingsWidget(QWidget):
         self.error_combo.currentIndexChanged.connect(self._emit_change)
         general_layout.addRow("Error Strategy:", self.error_combo)
         
-        # Global Savepath
-        output_layout = QHBoxLayout()
+        exec_layout.addWidget(general_group)
+        
+        # Output Group (Global Savepath & BIDS ID)
+        output_group = QGroupBox("Global Output Settings")
+        output_v_layout = QVBoxLayout(output_group)
+        
+        self.use_global_cb = QCheckBox("Use Global Savepath for Results")
+        self.use_global_cb.setChecked(self.settings.get("use_global_savepath", False))
+        self.use_global_cb.toggled.connect(self._emit_change)
+        output_v_layout.addWidget(self.use_global_cb)
+        
+        # Path Selection
+        path_layout = QHBoxLayout()
         self.output_edit = QLineEdit(self.settings.get("global_savepath", ""))
         self.output_edit.setPlaceholderText("Select global directory for saving...")
         self.output_edit.textChanged.connect(self._emit_change)
@@ -49,11 +70,33 @@ class PipelineSettingsWidget(QWidget):
         self.btn_browse.setFixedWidth(30)
         self.btn_browse.clicked.connect(self._browse_output)
         
-        output_layout.addWidget(self.output_edit)
-        output_layout.addWidget(self.btn_browse)
-        general_layout.addRow("Global Savepath:", output_layout)
+        path_layout.addWidget(self.output_edit)
+        path_layout.addWidget(self.btn_browse)
+        output_v_layout.addLayout(path_layout)
         
-        layout.addWidget(general_group)
+        # BIDS ID Options
+        self.bids_id_group = QGroupBox("BIDS Identifier")
+        bids_id_layout = QFormLayout(self.bids_id_group)
+        bids_id_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        self.pipeline_id_edit = QLineEdit(self.settings.get("pipeline_id", "DAG"))
+        self.pipeline_id_edit.setPlaceholderText("e.g. DAG, Preproc_V1, etc.")
+        self.pipeline_id_edit.setFixedWidth(200)
+        self.pipeline_id_edit.textChanged.connect(self._emit_change)
+        bids_id_layout.addRow("Pipeline Identifier:", self.pipeline_id_edit)
+        
+        output_v_layout.addWidget(self.bids_id_group)
+        exec_layout.addWidget(output_group)
+        
+        # Connect checkbox to enable/disable states
+        self.use_global_cb.toggled.connect(self.output_edit.setEnabled)
+        self.use_global_cb.toggled.connect(self.btn_browse.setEnabled)
+        self.use_global_cb.toggled.connect(self.bids_id_group.setEnabled)
+        
+        # Initial state
+        self.output_edit.setEnabled(self.use_global_cb.isChecked())
+        self.btn_browse.setEnabled(self.use_global_cb.isChecked())
+        self.bids_id_group.setEnabled(self.use_global_cb.isChecked())
         
         # Testing Group
         test_group = QGroupBox("Testing & Batch")
@@ -79,9 +122,12 @@ class PipelineSettingsWidget(QWidget):
         test_layout.addWidget(self.test_cb)
         test_layout.addLayout(test_size_layout)
         
-        layout.addWidget(test_group)
+        exec_layout.addWidget(test_group)
+        exec_layout.addStretch()
         
-        layout.addStretch()
+        self.tabs.addTab(execution_tab, "Execution")
+        
+        main_layout.addWidget(self.tabs)
             
     def _emit_change(self):
         self.settings = {
@@ -90,7 +136,9 @@ class PipelineSettingsWidget(QWidget):
             "test_mode": self.test_cb.isChecked(),
             "test_sample_size": self.sample_spin.value(),
             "parallel_processing": self.parallel_cb.isChecked(),
-            "global_savepath": self.output_edit.text()
+            "use_global_savepath": self.use_global_cb.isChecked(),
+            "global_savepath": self.output_edit.text(),
+            "pipeline_id": self.pipeline_id_edit.text()
         }
         self.settings_changed.emit(self.settings)
 
@@ -122,9 +170,22 @@ class PipelineSettingsWidget(QWidget):
         self.sample_spin.setValue(settings.get("test_sample_size", 1))
         self.sample_spin.setEnabled(self.test_cb.isChecked())
         
+        self.use_global_cb.blockSignals(True)
+        self.use_global_cb.setChecked(settings.get("use_global_savepath", False))
+        self.use_global_cb.blockSignals(False)
+        
         self.output_edit.blockSignals(True)
         self.output_edit.setText(settings.get("global_savepath", ""))
         self.output_edit.blockSignals(False)
+        
+        self.pipeline_id_edit.blockSignals(True)
+        self.pipeline_id_edit.setText(settings.get("pipeline_id", "DAG"))
+        self.pipeline_id_edit.blockSignals(False)
+        
+        # Sync enablement
+        self.output_edit.setEnabled(self.use_global_cb.isChecked())
+        self.btn_browse.setEnabled(self.use_global_cb.isChecked())
+        self.bids_group.setEnabled(self.use_global_cb.isChecked())
         
         self.report_cb.blockSignals(False)
         self.parallel_cb.blockSignals(False)

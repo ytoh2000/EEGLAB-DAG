@@ -61,6 +61,7 @@ class CodeGenerator:
         code.append("param = struct();")
         code.append(f"param.openWeb = {str(settings.get('generate_report', True)).lower()};")
         code.append(f"param.path_globalSavepath = '{settings.get('global_savepath', '')}';")
+        code.append(f"param.pipeline_id = '{settings.get('pipeline_id', 'DAG')}';")
         code.append("")
         
         node_counts = {}
@@ -231,8 +232,8 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
     try
         % Handle BIDS-compliant global output folder for pop_saveset
         if strcmp(funcName, 'pop_saveset') && isfield(stepParam, 'use_global_savepath') && stepParam.use_global_savepath
-            % Build BIDS Derivatives path: derivatives/DAG/sub-XX/ses-YY/eeg/
-            save_path = fullfile(param.path_globalSavepath, 'derivatives', 'DAG', param.sub);
+            % Build BIDS Derivatives path: derivatives/<pipeline_id>/sub-XX/ses-YY/eeg/
+            save_path = fullfile(param.path_globalSavepath, 'derivatives', param.pipeline_id, param.sub);
             if ~isempty(param.ses); save_path = fullfile(save_path, param.ses); end
             save_path = fullfile(save_path, 'eeg');
             
@@ -305,8 +306,8 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
         
         % When use_global_savepath is on, build BIDS-aware directory and filename
         if use_global
-            % Build BIDS Figures path: derivatives/DAG/sub-XX/ses-YY/figures/
-            save_dir = fullfile(param.path_globalSavepath, 'derivatives', 'DAG', param.sub);
+            % Build BIDS Figures path: derivatives/<pipeline_id>/sub-XX/ses-YY/figures/
+            save_dir = fullfile(param.path_globalSavepath, 'derivatives', param.pipeline_id, param.sub);
             if ~isempty(param.ses); save_dir = fullfile(save_dir, param.ses); end
             save_dir = fullfile(save_dir, 'figures');
             
