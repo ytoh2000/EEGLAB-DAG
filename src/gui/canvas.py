@@ -39,6 +39,7 @@ class CanvasView(QGraphicsView):
         
         # Undo/Redo
         self.undo_stack = QUndoStack(self)
+        self.pipeline_settings = {}
         
         # Move tracking (for undo)
         self._drag_start_positions = {}
@@ -374,7 +375,8 @@ class CanvasView(QGraphicsView):
                                   readonly=is_linked_to_get_files,
                                   disabled_params=disabled_params,
                                   save_output=item.save_output,
-                                  transfer_inputs=item.transfer_inputs)
+                                  transfer_inputs=item.transfer_inputs,
+                                  pipeline_settings=self.pipeline_settings)
         if dialog.exec():
             new_params = dialog.get_params()
             new_note = dialog.note_edit.toPlainText()

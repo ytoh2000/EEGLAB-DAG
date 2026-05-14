@@ -63,17 +63,23 @@
             "default": ""
         },
         {
-            "name": "save_as",
-            "type": "filepath",
-            "description": "Save figure to file (e.g. 'myplot.png').",
+            "name": "filepath",
+            "type": "directory",
+            "description": "Directory to save the figure to.",
             "required": false,
-            "default": "",
-            "mode": "save"
+            "default": ""
         },
         {
-            "name": "use_pipeline_output",
+            "name": "filename",
+            "type": "string",
+            "description": "Filename for the saved figure (e.g. 'topoplot.png'). Leave empty to skip saving.",
+            "required": false,
+            "default": "topoplot.png"
+        },
+        {
+            "name": "use_global_savepath",
             "type": "bool",
-            "description": "If enabled, the plotting output (if save_as is used) will be directed to the global 'Output Folder'.",
+            "description": "If enabled, the plotting output (if save_as is used) will be directed to the global 'Global Savepath'.",
             "required": false,
             "default": true
         }

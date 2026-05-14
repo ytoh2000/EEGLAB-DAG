@@ -4,9 +4,9 @@ from PyQt6.QtCore import QProcess, Qt
 class ExecutionDialog(QDialog):
     """A dialog to display live console output from a running background process (like MATLAB)."""
     
-    def __init__(self, output_folder=None, parent=None):
+    def __init__(self, global_savepath=None, parent=None):
         super().__init__(parent)
-        self.output_folder = output_folder
+        self.global_savepath = global_savepath
         self.setWindowTitle("MATLAB Pipeline Execution")
         self.resize(700, 500)
         self.setModal(False) # Non-modal so user can interact with main window if needed
@@ -30,10 +30,10 @@ class ExecutionDialog(QDialog):
         import os
         import platform
         
-        self.btn_open_folder = QPushButton("Show Output Folder")
-        self.btn_open_folder.clicked.connect(self.open_output_folder)
-        if not self.output_folder or not os.path.isdir(self.output_folder):
-            self.btn_open_folder.setToolTip("Output folder not specified in Pipeline Settings.")
+        self.btn_open_folder = QPushButton("Show Global Savepath")
+        self.btn_open_folder.clicked.connect(self.open_savepath)
+        if not self.global_savepath or not os.path.isdir(self.global_savepath):
+            self.btn_open_folder.setToolTip("Global Savepath not specified or invalid.")
         btn_layout.addWidget(self.btn_open_folder)
         
         self.btn_cancel = QPushButton("Cancel Execution")
@@ -87,12 +87,12 @@ class ExecutionDialog(QDialog):
         text = bytes(data).decode('utf-8', errors='replace')
         self._insert_text_handling_backspace(text)
 
-    def open_output_folder(self):
+    def open_savepath(self):
         import os
         import platform
         import subprocess
         
-        folder = self.output_folder
+        folder = self.global_savepath
         if not folder or not os.path.isdir(folder):
             return
             

@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
             "test_mode": False,
             "test_sample_size": 1,
             "parallel_processing": False,
-            "output_folder": ""
+            "global_savepath": ""
         }
         
         self.app_settings = AppSettingsManager()
@@ -57,6 +57,7 @@ class MainWindow(QMainWindow):
         # Canvas
         self.canvas = CanvasView()
         self.canvas.pipeline_changed.connect(self.on_pipeline_changed)
+        self.canvas.pipeline_settings = self.pipeline_settings
         self.right_layout.addWidget(self.canvas)
         
         # Connect Sidebar to Canvas
@@ -122,6 +123,11 @@ class MainWindow(QMainWindow):
         from PyQt6.QtWidgets import QStyle
         style = self.style()
         
+        # New Pipeline (first icon)
+        self.new_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileIcon))
+        self.new_action.setToolTip("New Pipeline (Ctrl+N)")
+        toolbar.addAction(self.new_action)
+        
         # Open
         self.open_action.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
         toolbar.addAction(self.open_action)
@@ -179,6 +185,7 @@ class MainWindow(QMainWindow):
 
     def on_settings_changed(self, new_settings):
         self.pipeline_settings = new_settings
+        self.canvas.pipeline_settings = new_settings
         self.unsaved_changes = True
         self.update_title()
 
@@ -191,6 +198,7 @@ class MainWindow(QMainWindow):
     def _on_paper_pipeline_ready(self, pipeline, warnings, reasoning):
         self.canvas.from_pipeline(pipeline)
         self.pipeline_settings = pipeline.settings
+        self.canvas.pipeline_settings = self.pipeline_settings
         self.settings_widget.set_settings(self.pipeline_settings)
         self.current_file = None
         self.unsaved_changes = True
@@ -491,10 +499,12 @@ class MainWindow(QMainWindow):
             else:
                 cmd_inner = f"addpath('{src_matlab}'); run_pipeline('{temp_path_fwd}'); exit;"
                 
-            # Pass working directory to execution dialog so the user can open it
-            output_folder = self.cwd_edit.text()
+            # Pass global savepath to execution dialog so the user can open it
+            global_savepath = self.pipeline_settings.get('global_savepath', '')
+            if not global_savepath:
+                 global_savepath = self.cwd_edit.text()
                 
-            self.execution_dialog = ExecutionDialog(output_folder, self)
+            self.execution_dialog = ExecutionDialog(global_savepath, self)
             self.execution_dialog.start_execution(matlab_path, ["-batch", cmd_inner])
             
         except Exception as e:

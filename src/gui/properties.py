@@ -3,14 +3,22 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QIntValidator, QFont
 
 class PropertiesDialog(QDialog):
-    def __init__(self, node_type, current_params, step_def, parent=None, user_note='', readonly=False, disabled_params=None, save_output=False, transfer_inputs=None):
+    def __init__(self, node_type, current_params, step_def, parent=None, user_note='', readonly=False, disabled_params=None, save_output=False, transfer_inputs=None, pipeline_settings=None):
         super().__init__(parent)
         self.readonly = readonly
         self.disabled_params = disabled_params or []
         self.save_output = save_output
         self.transfer_inputs = transfer_inputs or {}
+        self._canvas_parent = parent  # Keep reference to canvas to read live pipeline_settings
+        self.pipeline_settings = pipeline_settings or {}
+        self._initializing = True
         self.setWindowTitle(f"Properties: {node_type}")
         self.resize(450, 500)
+        
+        self.save_path_edit = None
+        self.save_path_picker = None
+        self.plot_filename_edit = None  # For visualization nodes: the filename QLineEdit
+        self.use_pipeline_cb = None
         
         self.node_type = node_type
         self.params = current_params.copy()
@@ -109,6 +117,10 @@ class PropertiesDialog(QDialog):
                 param_layout.insertRow(0, self.auto_suffix_cb)
             self._on_auto_suffix_toggled(self.auto_suffix_cb.isChecked())
             
+        if self.use_pipeline_cb and self.save_path_edit:
+            self._on_use_global_savepath_toggled(self.use_pipeline_cb.isChecked())
+            
+        self._initializing = False
         tabs.addTab(param_widget, "Parameters")
 
         # Help tab
@@ -138,13 +150,26 @@ class PropertiesDialog(QDialog):
         can_disable = inp.get('can_disable', False)
         accepts_transfer = inp.get('accepts_transfer', False)
         
-        # Capitalize first letter only, preserve rest of the string
-        label_text = name[0].upper() + name[1:] if name else ""
+        # Replace underscores with spaces and use title case for a cleaner UI
+        label_text = name.replace('_', ' ').title() if name else ""
         
         label = QLabel(label_text)
         label.setToolTip(desc)
         
         val = self.params.get(name, default)
+
+        # Special handling for use_global_savepath toggle
+        if name == 'use_global_savepath':
+            cb = QCheckBox()
+            cb.setChecked(bool(val))
+            cb.toggled.connect(self._on_use_global_savepath_toggled)
+            self.use_pipeline_cb = cb
+            layout.addRow(label, cb)
+            self.inputs[name] = {'widget': cb, 'type': 'bool', 'can_disable': False, 'label': label}
+            # Trigger path update — save_path_edit is already set (save_as/filepath comes first in JSON)
+            if self.save_path_edit:
+                self._on_use_global_savepath_toggled(bool(val))
+            return
         
         # Check if this parameter is receiving a transfer connection
         if accepts_transfer and name in self.transfer_inputs:
@@ -186,9 +211,15 @@ class PropertiesDialog(QDialog):
         
         elif inp_type == 'filepath':
             widget = FilePickerWidget(val if not is_off else "", "file")
+            if name == 'save_as':
+                self.save_path_edit = widget.line_edit
+                self.save_path_picker = widget
         
         elif inp_type == 'directory':
              widget = FilePickerWidget(val if not is_off else "", "dir")
+             if name == 'filepath':
+                 self.save_path_edit = widget.line_edit
+                 self.save_path_picker = widget
 
         elif inp_type == 'bool':
              widget = QCheckBox()
@@ -208,6 +239,10 @@ class PropertiesDialog(QDialog):
             display_val = val if not is_off else default
             widget = QLineEdit(str(display_val) if display_val is not None else "")
             widget.setPlaceholderText(str(default) if default is not None else "")
+            
+            # Track the filename field for visualization nodes
+            if name == 'filename' and self.step_def.get('type') == 'visualization':
+                self.plot_filename_edit = widget
             
             # Add validators for numeric types
             if inp_type == 'float':
@@ -249,6 +284,66 @@ class PropertiesDialog(QDialog):
             label.setEnabled(False)
 
         layout.addRow(label, final_widget)
+
+    def _get_pipeline_settings(self):
+        """Return live pipeline_settings from the parent canvas if available, else cached copy."""
+        if self._canvas_parent and hasattr(self._canvas_parent, 'pipeline_settings'):
+            return self._canvas_parent.pipeline_settings
+        return self.pipeline_settings
+
+    def _on_use_global_savepath_toggled(self, checked):
+        if not self.save_path_edit:
+            return
+
+        settings = self._get_pipeline_settings()
+        if checked:
+            out_folder = settings.get('global_savepath', '')
+            if out_folder:
+                import os
+                is_plot = self.step_def.get('type') == 'visualization'
+                if is_plot:
+                    plot_name = self.step_def.get('name', self.step_def.get('function', 'plot'))
+                    resolved = os.path.join(out_folder, 'plot', plot_name)
+                else:
+                    resolved = os.path.join(out_folder, 'data')
+                
+                self.save_path_edit.setText(resolved)
+                self.save_path_edit.setReadOnly(True)
+                self.save_path_edit.setStyleSheet("background-color: #F5F5F5; color: #666; border: 1px solid #ddd;")
+                if self.save_path_picker:
+                    self.save_path_picker.btn.setEnabled(False)
+                
+                # Autofill filename for visualization nodes using the JSON default
+                if is_plot and self.plot_filename_edit:
+                    # Find default filename from step_def inputs
+                    default_fname = next(
+                        (inp.get('default', '') for inp in self.step_def.get('inputs', [])
+                         if inp.get('name') == 'filename'),
+                        ''
+                    )
+                    if default_fname:
+                        self.plot_filename_edit.setText(str(default_fname))
+                    self.plot_filename_edit.setReadOnly(True)
+                    self.plot_filename_edit.setStyleSheet("background-color: #F5F5F5; color: #666; border: 1px solid #ddd;")
+            else:
+                self.save_path_edit.setPlaceholderText("Please set Global Savepath in Pipeline Settings first")
+                if not self._initializing:
+                    self.save_path_edit.setText("")
+        else:
+            self.save_path_edit.setReadOnly(False)
+            self.save_path_edit.setStyleSheet("")
+            if not self._initializing:
+                self.save_path_edit.setText("")
+            if self.save_path_picker:
+                self.save_path_picker.btn.setEnabled(True)
+            self.save_path_edit.setPlaceholderText("Select path…")
+            
+            # Unlock filename field too
+            if self.plot_filename_edit:
+                self.plot_filename_edit.setReadOnly(False)
+                self.plot_filename_edit.setStyleSheet("")
+                if not self._initializing:
+                    self.plot_filename_edit.setText("")
 
     def get_params(self):
         new_params = {}

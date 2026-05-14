@@ -125,27 +125,27 @@
             "description": "Output EEG structure with bad channels detected and removed"
         },
         {
-            "name": "red_chFlat",
+            "name": "chFlat",
             "type": "integer",
             "description": "Indices of flat line channels"
         },
         {
-            "name": "red_ch",
+            "name": "chLOF",
             "type": "integer",
             "description": "Indices of outlier channels detected by LOF"
         },
         {
-            "name": "yellow_ch",
+            "name": "chPeriodogram",
             "type": "integer",
             "description": "Indices of outlier channels detected by periodogram analysis"
         },
         {
-            "name": "LOF_vec",
+            "name": "scoreLOF",
             "type": "float",
-            "description": "LOF value for each channel"
+            "description": "LOF scores for each channel"
         },
         {
-            "name": "thresh_lof_update",
+            "name": "threshLOF",
             "type": "float",
             "description": "Final adapted LOF threshold used"
         }

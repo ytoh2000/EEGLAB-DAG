@@ -70,12 +70,25 @@
             "default": ""
         },
         {
-            "name": "save_as",
-            "type": "filepath",
-            "description": "Save figure to file (e.g. 'headplot.png').",
+            "name": "filepath",
+            "type": "directory",
+            "description": "Directory to save the figure to.",
             "required": false,
-            "default": "",
-            "mode": "save"
+            "default": ""
+        },
+        {
+            "name": "filename",
+            "type": "string",
+            "description": "Filename for the saved figure (e.g. 'headplot.png'). Leave empty to skip saving.",
+            "required": false,
+            "default": "headplot.png"
+        },
+        {
+            "name": "use_global_savepath",
+            "type": "bool",
+            "description": "If enabled, filepath and filename are set automatically from the Global Savepath in Pipeline Settings.",
+            "required": false,
+            "default": true
         }
     ],
     "outputs": [],

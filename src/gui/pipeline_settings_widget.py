@@ -39,6 +39,20 @@ class PipelineSettingsWidget(QWidget):
         self.error_combo.currentIndexChanged.connect(self._emit_change)
         general_layout.addRow("Error Strategy:", self.error_combo)
         
+        # Global Savepath
+        output_layout = QHBoxLayout()
+        self.output_edit = QLineEdit(self.settings.get("global_savepath", ""))
+        self.output_edit.setPlaceholderText("Select global directory for saving...")
+        self.output_edit.textChanged.connect(self._emit_change)
+        
+        self.btn_browse = QPushButton("...")
+        self.btn_browse.setFixedWidth(30)
+        self.btn_browse.clicked.connect(self._browse_output)
+        
+        output_layout.addWidget(self.output_edit)
+        output_layout.addWidget(self.btn_browse)
+        general_layout.addRow("Global Savepath:", output_layout)
+        
         layout.addWidget(general_group)
         
         # Testing Group
@@ -75,9 +89,15 @@ class PipelineSettingsWidget(QWidget):
             "error_strategy": "skip" if self.error_combo.currentIndex() == 1 else "halt",
             "test_mode": self.test_cb.isChecked(),
             "test_sample_size": self.sample_spin.value(),
-            "parallel_processing": self.parallel_cb.isChecked()
+            "parallel_processing": self.parallel_cb.isChecked(),
+            "global_savepath": self.output_edit.text()
         }
         self.settings_changed.emit(self.settings)
+
+    def _browse_output(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Global Savepath Folder", self.output_edit.text())
+        if folder:
+            self.output_edit.setText(folder)
 
     def set_settings(self, settings):
         """Update UI without emitting signals (e.g. when loading a file)."""
@@ -101,6 +121,10 @@ class PipelineSettingsWidget(QWidget):
         self.test_cb.setChecked(settings.get("test_mode", False))
         self.sample_spin.setValue(settings.get("test_sample_size", 1))
         self.sample_spin.setEnabled(self.test_cb.isChecked())
+        
+        self.output_edit.blockSignals(True)
+        self.output_edit.setText(settings.get("global_savepath", ""))
+        self.output_edit.blockSignals(False)
         
         self.report_cb.blockSignals(False)
         self.parallel_cb.blockSignals(False)

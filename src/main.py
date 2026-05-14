@@ -36,7 +36,7 @@ def main():
     app.setFont(font)
     
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())
 
 if __name__ == "__main__":

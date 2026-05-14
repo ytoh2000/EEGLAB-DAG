@@ -1,0 +1,64 @@
+{
+    "name": "Extract Regular Epochs",
+    "function": "eeg_regepochs",
+    "type": "process",
+    "suffix": "REG",
+    "description": "Convert a continuous dataset into consecutive epochs of a specified regular length by adding dummy events and epoching around them.",
+    "category": "Tools",
+    "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/eeg_regepochs.m",
+    "inputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Input continuous EEG structure",
+            "required": true
+        },
+        {
+            "name": "recurrence",
+            "type": "float",
+            "description": "The regular recurrence interval of the dummy events used as time-locking events (in seconds).",
+            "required": false,
+            "default": 1
+        },
+        {
+            "name": "limits",
+            "type": "string",
+            "description": "Latencies relative to the time-locking events to use as epoch boundaries [minsec maxsec]. Default: [0 recurrence].",
+            "required": false,
+            "default": ""
+        },
+        {
+            "name": "rmbase",
+            "type": "float",
+            "description": "Remove baseline (s). NaN does not remove baseline. 0 removes the pre-0 baseline.",
+            "required": false,
+            "default": 0
+        },
+        {
+            "name": "eventtype",
+            "type": "string",
+            "description": "Name for the time locking event type.",
+            "required": false,
+            "default": "X"
+        },
+        {
+            "name": "extractepochs",
+            "type": "enum",
+            "description": "Extract data epochs ('on') or simply insert events ('off').",
+            "required": false,
+            "options": [
+                "on",
+                "off"
+            ],
+            "default": "on"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "EEG",
+            "type": "dataset",
+            "description": "Epoched EEG structure"
+        }
+    ],
+    "help_text": "EEG_REGEPOCHS - Convert a continuous dataset into consecutive epochs of a specified regular length by adding dummy events and epoching around them.\n\nUsage:\n    >> EEGout = eeg_regepochs(EEG); % use defaults\n    >> EEGout = eeg_regepochs(EEG, 'key', val, ...); \n\nRequired input:\n    EEG                 - EEG continuous data structure (EEG.trials = 1)\n\nOptional inputs:\n    'recurrence' - [in s] the regular recurrence interval of the dummy\n                   events used as time-locking events for the \n                   consecutive epochs {default: 1 s}\n    'limits'     - [minsec maxsec] latencies relative to the time-locking\n                   events to use as epoch boundaries. Stated epoch length \n                   will be reduced by one data point to avoid overlaps \n                   {default: [0 recurrence_interval]}\n    'rmbase'     - [NaN|latency] remove baseline (s). NaN does not remove\n                   baseline. 0 remove the pre-0 baseline. To\n                   remove the full epoch baseline, enter a value\n                   larger than the upper epoch limit. Default is 0.\n    'eventtype'  - [string] name for the time locking event type. Default is 'X'\n    'eventdata'  - [struct|cell] additional data to store with each event\n                   For example { 'condition' 'a' 'run' 1 }\n    'extractepochs' - ['on'|'off'] extract data epochs ('on') or simply\n                   insert events ('off'). Default is 'on'."
+}

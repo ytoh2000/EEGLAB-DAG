@@ -27,9 +27,9 @@
             "default": ""
         },
         {
-            "name": "use_pipeline_output",
+            "name": "use_global_savepath",
             "type": "bool",
-            "description": "If enabled, the dataset will be saved to the global 'Output Folder' defined in the Pipeline Settings. This takes precedence over 'filepath'.",
+            "description": "If enabled, the dataset will be saved to the global 'Global Savepath' defined in the Pipeline Settings. This takes precedence over 'filepath'.",
             "required": false,
             "default": true
         },

@@ -60,7 +60,7 @@ class CodeGenerator:
         code.append("%% INITIALIZE PARAMETERS")
         code.append("param = struct();")
         code.append(f"param.openWeb = {str(settings.get('generate_report', True)).lower()};")
-        code.append(f"param.path_outFolder = '{settings.get('output_folder', '')}';")
+        code.append(f"param.path_globalSavepath = '{settings.get('global_savepath', '')}';")
         code.append("")
         
         node_counts = {}
@@ -227,8 +227,8 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
     if ~util_prevStepSuccess(log); return; end
     try
         % Handle global output folder for pop_saveset
-        if strcmp(funcName, 'pop_saveset') && isfield(stepParam, 'use_pipeline_output') && stepParam.use_pipeline_output
-            stepParam.filepath = param.path_outFolder;
+        if strcmp(funcName, 'pop_saveset') && isfield(stepParam, 'use_global_savepath') && stepParam.use_global_savepath
+            stepParam.filepath = fullfile(param.path_globalSavepath, 'data');
         end
 
         fields = fieldnames(stepParam);
@@ -242,7 +242,7 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
         
         for i=1:length(fields)
             % Skip internal flags
-            if strcmp(fields{i}, 'use_pipeline_output'); continue; end
+            if strcmp(fields{i}, 'use_global_savepath'); continue; end
             
             val = stepParam.(fields{i});
             if isempty(val); continue; end
@@ -268,38 +268,55 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
     try
         fields = fieldnames(stepParam);
         args = {EEG};
-        for i=1:length(fields)
-            if strcmp(fields{i}, 'use_pipeline_output'); continue; end
+        
+        use_global = isfield(stepParam, 'use_global_savepath') && stepParam.use_global_savepath;
+        
+        % Resolve save directory and filename separately
+        % These are pipeline-managed fields, not native MATLAB function args
+        save_dir  = '';
+        save_file = '';
+        if isfield(stepParam, 'filepath') && ~isempty(stepParam.filepath)
+            save_dir = stepParam.filepath;
+        end
+        if isfield(stepParam, 'filename') && ~isempty(stepParam.filename)
+            save_file = stepParam.filename;
+        end
+        
+        % When use_global_savepath is on, override with structured directory
+        if use_global
+            save_dir = fullfile(param.path_globalSavepath, 'plot', funcName);
+            if isempty(save_file)
+                save_file = [funcName '.jpg'];
+            end
+        end
+        
+        for i=1:length(fields)\n
+            % Skip pipeline-managed fields — not passed as args to the plot function
+            if ismember(fields{i}, {'use_global_savepath', 'filepath', 'filename'}); continue; end
             
             val = stepParam.(fields{i});
             if isempty(val); continue; end
-            
-            % Handle pipeline output folder for 'save_as' or similar path params
-            if isfield(stepParam, 'use_pipeline_output') && stepParam.use_pipeline_output
-                if ismember(fields{i}, {'save_as', 'filepath', 'filename'}) && ~isempty(val)
-                    [~, n, e] = fileparts(val);
-                    val = fullfile(param.path_outFolder, [n e]);
-                end
-            end
             
             args{end+1} = fields{i};
             args{end+1} = val;
         end
 
-        % Execute plotting function
+        % Execute the plotting function
         feval(funcName, args{:}); 
         
-        % Auto-save to report folder
-        figPath = fullfile(param.path_outFolder, 'report', 'plot', param.current_filename);
-        if ~exist(figPath, 'dir'); mkdir(figPath); end
-        
-        fig = gcf;
-        filename = fullfile(figPath, [stepKeyword '.jpg']);
-        saveas(fig, filename);
-        close(fig);
+        % Save figure if a path is defined
+        filename = '';
+        if ~isempty(save_dir) && ~isempty(save_file)
+            if ~exist(save_dir, 'dir'); mkdir(save_dir); end
+            fig = gcf;
+            filename = fullfile(save_dir, save_file);
+            saveas(fig, filename);
+            close(fig);
+        end
         
         success = 1;
-        logKeyPair = {'proc_success', success; 'func', funcName; 'out_savedFigures', {filename}};
+        logKeyPair = {'proc_success', success; 'func', funcName; 'out_savedFigure', filename};
+
     catch ME
         success = 0;
         logKeyPair = {'proc_success', success; 'func', funcName; 'error', ME.message};

@@ -1,5 +1,5 @@
 {
-    "name": "Autoreject",
+    "name": "Automatic epoch rejection",
     "function": "pop_autorej",
     "type": "process",
     "suffix": "AR",
