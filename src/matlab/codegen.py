@@ -143,6 +143,9 @@ class CodeGenerator:
         code.append(indent + "[~, current_fname, ~] = fileparts(fileList{fL,3});")
         code.append(indent + "param.current_filename = current_fname;")
         
+        # BIDS Parsing
+        code.append(indent + "[param.sub, param.ses, param.task, param.run] = util_parseBIDS(current_fname);")
+        
         # Transfer tracking
         transfer_vars = {} # transfer_node_id -> var_name
         for n in self.pipeline.nodes:
@@ -226,9 +229,27 @@ end
 function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, param)
     if ~util_prevStepSuccess(log); return; end
     try
-        % Handle global output folder for pop_saveset
+        % Handle BIDS-compliant global output folder for pop_saveset
         if strcmp(funcName, 'pop_saveset') && isfield(stepParam, 'use_global_savepath') && stepParam.use_global_savepath
-            stepParam.filepath = fullfile(param.path_globalSavepath, 'data');
+            % Build BIDS Derivatives path: derivatives/DAG/sub-XX/ses-YY/eeg/
+            save_path = fullfile(param.path_globalSavepath, 'derivatives', 'DAG', param.sub);
+            if ~isempty(param.ses); save_path = fullfile(save_path, param.ses); end
+            save_path = fullfile(save_path, 'eeg');
+            
+            if ~exist(save_path, 'dir'); mkdir(save_path); end
+            stepParam.filepath = save_path;
+            
+            % Build BIDS-compliant filename: sub-01_ses-01_task-rest_desc-preproc_eeg.set
+            suffix = 'preproc';
+            if isfield(stepParam, 'suffix'); suffix = stepParam.suffix; end % If node has a custom suffix
+            
+            fname = param.sub;
+            if ~isempty(param.ses); fname = [fname '_' param.ses]; end
+            if ~isempty(param.task); fname = [fname '_' param.task]; end
+            if ~isempty(param.run); fname = [fname '_' param.run]; end
+            fname = [fname '_desc-' suffix '_eeg.set'];
+            
+            stepParam.filename = fname;
         end
 
         fields = fieldnames(stepParam);
@@ -282,12 +303,26 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
             save_file = stepParam.filename;
         end
         
-        % When use_global_savepath is on, override with structured directory
+        % When use_global_savepath is on, build BIDS-aware directory and filename
         if use_global
-            save_dir = fullfile(param.path_globalSavepath, 'plot', funcName);
-            if isempty(save_file)
-                save_file = [funcName '.jpg'];
-            end
+            % Build BIDS Figures path: derivatives/DAG/sub-XX/ses-YY/figures/
+            save_dir = fullfile(param.path_globalSavepath, 'derivatives', 'DAG', param.sub);
+            if ~isempty(param.ses); save_dir = fullfile(save_dir, param.ses); end
+            save_dir = fullfile(save_dir, 'figures');
+            
+            if ~exist(save_dir, 'dir'); mkdir(save_dir); end
+            
+            % Build BIDS-aware filename: sub-01_ses-01_task-rest_desc-topoplot.png
+            fname = param.sub;
+            if ~isempty(param.ses); fname = [fname '_' param.ses]; end
+            if ~isempty(param.task); fname = [fname '_' param.task]; end
+            if ~isempty(param.run); fname = [fname '_' param.run]; end
+            
+            % Use the node label or function name as the plot description
+            plot_desc = funcName;
+            if isfield(stepParam, 'desc') && ~isempty(stepParam.desc); plot_desc = stepParam.desc; end
+            
+            save_file = [fname '_desc-' plot_desc '.png'];
         end
         
         for i=1:length(fields)\n
@@ -348,6 +383,32 @@ end
 
 function log = util_wrapUpStep(EEG, param, log, stepName, logKeyPair, success)
     log = util_createLog(log, stepName, logKeyPair);
+    if ~isempty(EEG)
+        log.(stepName).EEG_trials = EEG.trials;
+        log.(stepName).EEG_pnts = EEG.pnts;
+    end
+end
+
+function [sub, ses, task, run] = util_parseBIDS(fname)
+    % Extract sub, ses, task, run from BIDS filename
+    sub = ''; ses = ''; task = ''; run = '';
+    
+    tokens = regexp(fname, 'sub-([a-zA-Z0-9]+)', 'tokens');
+    if ~isempty(tokens); sub = ['sub-' tokens{1}{1}]; end
+    
+    tokens = regexp(fname, 'ses-([a-zA-Z0-9]+)', 'tokens');
+    if ~isempty(tokens); ses = ['ses-' tokens{1}{1}]; end
+    
+    tokens = regexp(fname, 'task-([a-zA-Z0-9]+)', 'tokens');
+    if ~isempty(tokens); task = ['task-' tokens{1}{1}]; end
+    
+    tokens = regexp(fname, 'run-([a-zA-Z0-9]+)', 'tokens');
+    if ~isempty(tokens); run = ['run-' tokens{1}{1}]; end
+    
+    % Fallback if sub is missing
+    if isempty(sub)
+        sub = 'sub-unknown';
+    end
 end
 
 function util_createReport(param, log)

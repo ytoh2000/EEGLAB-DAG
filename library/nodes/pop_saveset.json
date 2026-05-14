@@ -2,6 +2,7 @@
     "name": "Save Data (.set)",
     "function": "pop_saveset",
     "type": "output",
+    "suffix": "preproc",
     "category": "File",
     "description": "Save one or more EEG dataset structures.",
     "github_url": "https://github.com/sccn/eeglab/blob/master/functions/popfunc/pop_saveset.m",

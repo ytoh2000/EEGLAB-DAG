@@ -298,37 +298,41 @@ class PropertiesDialog(QDialog):
         settings = self._get_pipeline_settings()
         if checked:
             out_folder = settings.get('global_savepath', '')
-            if out_folder:
-                import os
-                is_plot = self.step_def.get('type') == 'visualization'
-                if is_plot:
-                    plot_name = self.step_def.get('name', self.step_def.get('function', 'plot'))
-                    resolved = os.path.join(out_folder, 'plot', plot_name)
-                else:
-                    resolved = os.path.join(out_folder, 'data')
-                
-                self.save_path_edit.setText(resolved)
-                self.save_path_edit.setReadOnly(True)
-                self.save_path_edit.setStyleSheet("background-color: #F5F5F5; color: #666; border: 1px solid #ddd;")
-                if self.save_path_picker:
-                    self.save_path_picker.btn.setEnabled(False)
-                
-                # Autofill filename for visualization nodes using the JSON default
-                if is_plot and self.plot_filename_edit:
-                    # Find default filename from step_def inputs
-                    default_fname = next(
-                        (inp.get('default', '') for inp in self.step_def.get('inputs', [])
-                         if inp.get('name') == 'filename'),
-                        ''
-                    )
-                    if default_fname:
-                        self.plot_filename_edit.setText(str(default_fname))
-                    self.plot_filename_edit.setReadOnly(True)
-                    self.plot_filename_edit.setStyleSheet("background-color: #F5F5F5; color: #666; border: 1px solid #ddd;")
+            import os
+            is_plot = self.step_def.get('type') == 'visualization'
+            
+            # For the UI, show a clean BIDS-aware relative path
+            # The actual absolute path resolution happens in MATLAB/Codegen
+            if is_plot:
+                ui_path = "[Global]/derivatives/DAG/sub-XX/ses-YY/figures/"
             else:
+                ui_path = "[Global]/derivatives/DAG/sub-XX/ses-YY/eeg/"
+            
+            self.save_path_edit.setText(ui_path)
+            self.save_path_edit.setReadOnly(True)
+            self.save_path_edit.setStyleSheet("background-color: #F5F5F5; color: #1565C0; border: 1px solid #90CAF9; font-weight: bold;")
+            if self.save_path_picker:
+                self.save_path_picker.btn.setEnabled(False)
+            
+            # Autofill filename using BIDS naming convention
+            if self.plot_filename_edit:
+                if is_plot:
+                    # BIDS-like filename for plots
+                    ext = ".png"
+                    default_fname = "sub-XX_ses-YY_task-ZZ_plot" + ext
+                else:
+                    # BIDS derivative filename for EEG
+                    ext = ".set"
+                    # Try to get a suffix from the node definition (e.g., 'preproc', 'ica')
+                    node_suffix = self.step_def.get('suffix', 'processed')
+                    default_fname = f"sub-XX_ses-YY_task-ZZ_desc-{node_suffix}_eeg{ext}"
+                
+                self.plot_filename_edit.setText(default_fname)
+                self.plot_filename_edit.setReadOnly(True)
+                self.plot_filename_edit.setStyleSheet("background-color: #F5F5F5; color: #1565C0; border: 1px solid #90CAF9; font-weight: bold;")
+            
+            if not out_folder:
                 self.save_path_edit.setPlaceholderText("Please set Global Savepath in Pipeline Settings first")
-                if not self._initializing:
-                    self.save_path_edit.setText("")
         else:
             self.save_path_edit.setReadOnly(False)
             self.save_path_edit.setStyleSheet("")
@@ -338,7 +342,6 @@ class PropertiesDialog(QDialog):
                 self.save_path_picker.btn.setEnabled(True)
             self.save_path_edit.setPlaceholderText("Select path…")
             
-            # Unlock filename field too
             if self.plot_filename_edit:
                 self.plot_filename_edit.setReadOnly(False)
                 self.plot_filename_edit.setStyleSheet("")
