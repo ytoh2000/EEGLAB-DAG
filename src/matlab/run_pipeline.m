@@ -327,6 +327,12 @@ function process_single_file(file_path, steps)
                      % keep
                 end
                 
+                % Auto-parse potential lists for channel/index parameters
+                list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
+                if ismember(pname, list_params)
+                    pval = util_parse_list(pval);
+                end
+                
                 mapped_args{end+1} = pname;
                 mapped_args{end+1} = pval;
             end
@@ -365,5 +371,63 @@ function process_single_file(file_path, steps)
             warning('Error executing %s: %s', func_name, ME.message);
             rethrow(ME);
         end
+    end
+end
+
+function val = util_parse_list(val)
+    % Parses a space/comma separated string into a numeric array or cell array of strings.
+    if ~ischar(val) || isempty(val)
+        return;
+    end
+    
+    val = strtrim(val);
+    
+    % Strip brackets if present
+    if startsWith(val, '[') && endsWith(val, ']')
+        val = strtrim(val(2:end-1));
+    end
+    
+    % Strip quotes if they wrap the whole thing
+    if (startsWith(val, "'") && endsWith(val, "'")) || (startsWith(val, '"') && endsWith(val, '"'))
+        val = val(2:end-1);
+    end
+    
+    if isempty(val)
+        val = [];
+        return;
+    end
+    
+    % Split by spaces or commas
+    parts = strsplit(val, {',', ' '});
+    parts = parts(~cellfun(@isempty, parts));
+    
+    if isempty(parts)
+        val = [];
+        return;
+    end
+    
+    % Check if all parts are numbers
+    all_num = true;
+    nums = zeros(1, length(parts));
+    for i = 1:length(parts)
+        p = parts{i};
+        % Strip quotes from individual parts if present
+        if (startsWith(p, "'") && endsWith(p, "'")) || (startsWith(p, '"') && endsWith(p, '"'))
+            p = p(2:end-1);
+            parts{i} = p;
+        end
+        
+        n = str2double(p);
+        if isnan(n)
+            all_num = false;
+        else
+            nums(i) = n;
+        end
+    end
+    
+    if all_num
+        val = nums;
+    else
+        val = parts;
     end
 end
