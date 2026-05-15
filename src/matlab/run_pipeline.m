@@ -145,21 +145,43 @@ function run_pipeline(job_file)
 
 end
 
-function process_single_file(file_path, steps)
-    if ispc && ~exist(file_path, 'file') && startsWith(file_path, '/Volumes/')
-        % On Windows, /Volumes/VolumeName/Path often maps to Drive:\Path
-        % If the current drive is already mapped to the volume, we try stripping the prefix.
-        parts = strsplit(file_path, '/');
-        if length(parts) >= 4
-            % Try stripping /Volumes/VolumeName/
-            alt_path = strjoin(parts(4:end), filesep);
-            if exist(alt_path, 'file')
-                file_path = alt_path;
-            elseif exist(fullfile(pwd, alt_path), 'file')
-                file_path = fullfile(pwd, alt_path);
+function file_path = util_normalize_path(file_path)
+    % Fix mixed slashes and redundant separators
+    file_path = strrep(file_path, '\', '/');
+    file_path = regexprep(file_path, '/+', '/');
+    
+    if ispc
+        % On Windows, fix Mac-style /Volumes/ paths
+        if startsWith(file_path, '/Volumes/')
+            parts = strsplit(file_path, '/');
+            if length(parts) >= 4
+                % Parts: {'', 'Volumes', 'VolumeName', 'Path', ...}
+                % If VolumeName is marsh_lab2 and we are on Z:, we want Z:\Path
+                % Try to match volume name or just strip it if we are already in a mapped drive
+                
+                % Strategy: Strip /Volumes/VolumeName/ and try relative to PWD first
+                rel_path = strjoin(parts(4:end), filesep);
+                
+                % If it exists relative to current drive, use it
+                if exist(rel_path, 'file')
+                    file_path = rel_path;
+                else
+                    % Try common drive letters or just prepend filesep for relative
+                    file_path = rel_path;
+                end
             end
         end
+        % Final Windows normalization
+        file_path = strrep(file_path, '/', '\');
+    else
+        % Final Unix normalization
+        file_path = strrep(file_path, '\', '/');
     end
+end
+
+function process_single_file(file_path, steps)
+    file_path = util_normalize_path(file_path);
+    
 
     [~, fname, fext] = fileparts(file_path);
     current_EEG = []; 
