@@ -20,8 +20,8 @@ class PipelineSettingsWidget(QWidget):
             "bids_authors": "",
             "bids_default_task": "",
             "bids_modality": "eeg",
-            "save_matlab_log": False,
-            "save_matlab_code": False
+            "save_matlab_log": True,
+            "save_matlab_code": True
         }
         
         main_layout = QVBoxLayout(self)

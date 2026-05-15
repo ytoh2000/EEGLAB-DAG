@@ -71,13 +71,12 @@ class Pipeline:
         else:
             v_graph = data
             
-        pipeline.settings = v_graph.get("settings", {
+        default_settings = {
             "generate_report": True,
             "error_strategy": "halt",
             "test_mode": False,
             "test_sample_size": 1,
             "parallel_processing": False,
-            "output_folder": "",
             "pipeline_id": "DAG",
             "use_global_savepath": True,
             "global_savepath": "",
@@ -85,9 +84,14 @@ class Pipeline:
             "bids_authors": "",
             "bids_default_task": "",
             "bids_modality": "eeg",
-            "save_matlab_log": False,
-            "save_matlab_code": False
-        })
+            "save_matlab_log": True,
+            "save_matlab_code": True
+        }
+        
+        loaded_settings = v_graph.get("settings", {})
+        # Merge: defaults updated by loaded values
+        pipeline.settings = default_settings.copy()
+        pipeline.settings.update(loaded_settings)
         
         # Migrate old settings
         if 'stop_on_error' in pipeline.settings:

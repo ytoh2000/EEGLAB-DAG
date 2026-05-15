@@ -89,6 +89,9 @@ class ExecutionDialog(QDialog):
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir, exist_ok=True)
             
+            if not os.path.isdir(log_dir):
+                 raise RuntimeError(f"Failed to create or access directory: {log_dir}")
+            
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"log_run_MATLAB_{timestamp}.log"
             log_path = os.path.join(log_dir, filename)
@@ -96,7 +99,7 @@ class ExecutionDialog(QDialog):
             self.log_file = open(log_path, "w", encoding="utf-8")
             self.append_message(f"> Log file created: {log_path}")
         except Exception as e:
-            self.append_message(f"> Warning: Could not create log file at {self.global_savepath}: {e}")
+            self.append_message(f"> ERROR: Could not initialize logging at {self.global_savepath}\n  Details: {e}")
             self.log_file = None
         
     def _insert_text_handling_backspace(self, text):

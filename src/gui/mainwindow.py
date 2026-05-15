@@ -29,8 +29,8 @@ class MainWindow(QMainWindow):
             "bids_authors": "",
             "bids_default_task": "",
             "bids_modality": "eeg",
-            "save_matlab_log": False,
-            "save_matlab_code": False
+            "save_matlab_log": True,
+            "save_matlab_code": True
         }
         
         self.app_settings = AppSettingsManager()
@@ -512,6 +512,9 @@ class MainWindow(QMainWindow):
                     matlab_dir = os.path.join(global_savepath, "matlab")
                     if not os.path.exists(matlab_dir):
                         os.makedirs(matlab_dir, exist_ok=True)
+                    
+                    if not os.path.isdir(matlab_dir):
+                         raise RuntimeError(f"Failed to create or access MATLAB directory: {matlab_dir}")
                     
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     script_filename = f"generated_script_{timestamp}.m"
