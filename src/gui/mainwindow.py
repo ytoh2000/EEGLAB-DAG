@@ -475,15 +475,25 @@ class MainWindow(QMainWindow):
             return
             
         # 1. Determine global savepath and initialize execution dialog immediately
-        # This ensures that logging starts before any preparation steps.
-        if self.pipeline_settings.get('use_global_savepath', True) and self.pipeline_settings.get('global_savepath'):
-             global_savepath = self.pipeline_settings.get('global_savepath')
+        # Priority: Global Settings (if enabled and set) > Current Directory (CWD)
+        use_global = self.pipeline_settings.get('use_global_savepath', True)
+        global_savepath = self.pipeline_settings.get('global_savepath', '')
+        
+        if use_global:
+            if not global_savepath:
+                 # Fallback to CWD but warn the user
+                 global_savepath = self.cwd_edit.text()
+                 initial_msg = f"> Warning: Global Save Path is enabled but NOT specified. Falling back to: {global_savepath}"
+            else:
+                 initial_msg = f"> Using Global Save Path: {global_savepath}"
         else:
-             global_savepath = self.cwd_edit.text()
+            global_savepath = self.cwd_edit.text()
+            initial_msg = f"> Using Current Directory: {global_savepath}"
              
         self.execution_dialog = ExecutionDialog(global_savepath, self, 
-                                                save_log=self.pipeline_settings.get('save_matlab_log', False))
+                                                 save_log=self.pipeline_settings.get('save_matlab_log', False))
         self.execution_dialog.show()
+        self.execution_dialog.append_message(initial_msg)
         self.execution_dialog.append_message("> Initializing execution environment...")
         
         import tempfile

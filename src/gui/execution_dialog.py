@@ -84,6 +84,7 @@ class ExecutionDialog(QDialog):
         import os
         from datetime import datetime
         try:
+            # Explicitly ensure we are using the intended global_savepath
             log_dir = os.path.join(self.global_savepath, "log")
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir, exist_ok=True)
@@ -93,9 +94,9 @@ class ExecutionDialog(QDialog):
             log_path = os.path.join(log_dir, filename)
             
             self.log_file = open(log_path, "w", encoding="utf-8")
-            self.output_view.appendPlainText(f"> Log file: {log_path}\n")
+            self.append_message(f"> Log file created: {log_path}")
         except Exception as e:
-            self.output_view.appendPlainText(f"> Warning: Could not create log file: {e}\n")
+            self.append_message(f"> Warning: Could not create log file at {self.global_savepath}: {e}")
             self.log_file = None
         
     def _insert_text_handling_backspace(self, text):

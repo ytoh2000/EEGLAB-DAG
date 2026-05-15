@@ -258,7 +258,7 @@ class PipelineSettingsWidget(QWidget):
         self.sample_spin.setEnabled(self.test_cb.isChecked())
         
         self.use_global_cb.blockSignals(True)
-        self.use_global_cb.setChecked(settings.get("use_global_savepath", False))
+        self.use_global_cb.setChecked(settings.get("use_global_savepath", True))
         self.use_global_cb.blockSignals(False)
         
         self.output_edit.blockSignals(True)
