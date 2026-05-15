@@ -19,9 +19,9 @@ function eegplugin_eeglab_dag(fig, try_strings, catch_strings)
     menu = uimenu(fig, 'Label', 'DAG');
 
     % Menu Item 1: DAG editor
-    dag_menu = uimenu(menu, 'Label', 'DAG editor');
-    uimenu(dag_menu, 'Label', 'Launch', 'Callback', 'pop_launch_dag();');
-    uimenu(dag_menu, 'Label', 'Launch (Force Python)', 'Callback', 'pop_launch_dag(1);');
+    % Calls pop_launch_dag()
+    uimenu(menu, 'Label', 'DAG editor', ...
+        'Callback', 'pop_launch_dag();');
 
     % Menu Item 2: Execute Job
     % Calls run_pipeline()
