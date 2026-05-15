@@ -20,7 +20,8 @@ class PipelineSettingsWidget(QWidget):
             "bids_authors": "",
             "bids_default_task": "",
             "bids_modality": "eeg",
-            "save_matlab_log": False
+            "save_matlab_log": False,
+            "save_matlab_code": False
         }
         
         main_layout = QVBoxLayout(self)
@@ -54,14 +55,19 @@ class PipelineSettingsWidget(QWidget):
         self.save_log_cb.toggled.connect(self._emit_change)
         general_grid.addWidget(self.save_log_cb, 2, 0, 1, 2)
         
+        self.save_code_cb = QCheckBox("Save MATLAB Script (.m)")
+        self.save_code_cb.setChecked(self.settings.get("save_matlab_code", False))
+        self.save_code_cb.toggled.connect(self._emit_change)
+        general_grid.addWidget(self.save_code_cb, 3, 0, 1, 2)
+        
         self.error_combo = QComboBox()
         self.error_combo.addItems(["Halt on Error", "Skip File and Continue"])
         if self.settings.get("error_strategy", "halt") == "skip":
             self.error_combo.setCurrentIndex(1)
         self.error_combo.currentIndexChanged.connect(self._emit_change)
         
-        general_grid.addWidget(QLabel("Error Strategy:"), 3, 0)
-        general_grid.addWidget(self.error_combo, 3, 1)
+        general_grid.addWidget(QLabel("Error Strategy:"), 4, 0)
+        general_grid.addWidget(self.error_combo, 4, 1)
         
         exec_layout.addWidget(general_group)
         
@@ -216,7 +222,8 @@ class PipelineSettingsWidget(QWidget):
             "bids_authors": self.authors_edit.text(),
             "bids_default_task": self.default_task_edit.text(),
             "bids_modality": self.modality_combo.currentText(),
-            "save_matlab_log": self.save_log_cb.isChecked()
+            "save_matlab_log": self.save_log_cb.isChecked(),
+            "save_matlab_code": self.save_code_cb.isChecked()
         }
         self.settings_changed.emit(self.settings)
 
@@ -239,6 +246,7 @@ class PipelineSettingsWidget(QWidget):
         self.report_cb.setChecked(settings.get("generate_report", True))
         self.parallel_cb.setChecked(settings.get("parallel_processing", False))
         self.save_log_cb.setChecked(settings.get("save_matlab_log", False))
+        self.save_code_cb.setChecked(settings.get("save_matlab_code", False))
         
         if settings.get("error_strategy", "halt") == "skip":
             self.error_combo.setCurrentIndex(1)

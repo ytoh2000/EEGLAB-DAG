@@ -150,7 +150,11 @@ function process_single_file(file_path, steps)
     current_EEG = []; 
     transfers = struct(); % Store transferred subfields (e.g. chanlocs)
     for s = 1:length(steps)
-        step = steps(s);
+        if iscell(steps)
+            step = steps{s};
+        else
+            step = steps(s);
+        end
         func_name = step.function;
         params = step.parameters;
         

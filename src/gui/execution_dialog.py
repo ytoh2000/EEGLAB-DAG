@@ -32,10 +32,14 @@ class ExecutionDialog(QDialog):
         import os
         import platform
         
-        self.btn_open_folder = QPushButton("Show Global Savepath")
+        self.btn_open_folder = QPushButton("Open Save Path")
         self.btn_open_folder.clicked.connect(self.open_savepath)
-        if not self.global_savepath or not os.path.isdir(self.global_savepath):
-            self.btn_open_folder.setToolTip("Global Savepath not specified or invalid.")
+        if not self.global_savepath:
+            import os
+            self.global_savepath = os.getcwd()
+        
+        if not os.path.isdir(self.global_savepath):
+            self.btn_open_folder.setToolTip(f"Path will be created on open: {self.global_savepath}")
         btn_layout.addWidget(self.btn_open_folder)
         
         self.btn_cancel = QPushButton("Cancel Execution")
@@ -122,8 +126,16 @@ class ExecutionDialog(QDialog):
         import subprocess
         
         folder = self.global_savepath
-        if not folder or not os.path.isdir(folder):
+        if not folder:
             return
+            
+        # Create folder if it doesn't exist
+        if not os.path.exists(folder):
+            try:
+                os.makedirs(folder, exist_ok=True)
+            except Exception as e:
+                self.output_view.appendPlainText(f"\n> Error: Could not create directory {folder}: {e}")
+                return
             
         if platform.system() == "Windows":
             os.startfile(folder)

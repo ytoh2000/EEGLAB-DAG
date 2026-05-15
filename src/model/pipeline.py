@@ -17,7 +17,8 @@ class Pipeline:
             "bids_authors": "",
             "bids_default_task": "",
             "bids_modality": "eeg",
-            "save_matlab_log": False
+            "save_matlab_log": False,
+            "save_matlab_code": False
         }
         
     def add_node(self, node_data):
@@ -84,7 +85,8 @@ class Pipeline:
             "bids_authors": "",
             "bids_default_task": "",
             "bids_modality": "eeg",
-            "save_matlab_log": False
+            "save_matlab_log": False,
+            "save_matlab_code": False
         })
         
         # Migrate old settings

@@ -23,7 +23,8 @@ class MainWindow(QMainWindow):
             "test_sample_size": 1,
             "parallel_processing": False,
             "global_savepath": "",
-            "save_matlab_log": False
+            "save_matlab_log": False,
+            "save_matlab_code": False
         }
         
         self.app_settings = AppSettingsManager()
@@ -508,7 +509,27 @@ class MainWindow(QMainWindow):
             global_savepath = self.pipeline_settings.get('global_savepath', '')
             if not global_savepath:
                  global_savepath = self.cwd_edit.text()
-                
+            
+            # 1. Generate and save MATLAB script if requested
+            if self.pipeline_settings.get('save_matlab_code', False):
+                try:
+                    from src.matlab.codegen import CodeGenerator
+                    generator = CodeGenerator(pipeline)
+                    
+                    matlab_dir = os.path.join(global_savepath, "matlab")
+                    if not os.path.exists(matlab_dir):
+                        os.makedirs(matlab_dir, exist_ok=True)
+                    
+                    from datetime import datetime
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    script_filename = f"generated_script_{timestamp}.m"
+                    script_path = os.path.join(matlab_dir, script_filename)
+                    
+                    generator.generate(script_path)
+                except Exception as e:
+                    # Don't halt execution just because script saving failed, but warn
+                    print(f"Warning: Could not save MATLAB script: {e}")
+
             self.execution_dialog = ExecutionDialog(global_savepath, self, save_log=self.pipeline_settings.get('save_matlab_log', False))
             self.execution_dialog.start_execution(matlab_path, ["-batch", cmd_inner])
             
