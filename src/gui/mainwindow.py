@@ -469,10 +469,15 @@ class MainWindow(QMainWindow):
             return
             
         # 1. Determine global savepath and initialize execution dialog immediately
-        # This ensures that logging starts before any preparation steps.
-        global_savepath = self.pipeline_settings.get('global_savepath', '')
+        # Use Global Savepath if enabled in settings, otherwise fallback to current folder
+        if self.pipeline_settings.get('use_global_savepath', False):
+            global_savepath = self.pipeline_settings.get('global_savepath', '')
+        else:
+            global_savepath = self.cwd_edit.text()
+            
         if not global_savepath:
-             global_savepath = self.cwd_edit.text()
+             import os
+             global_savepath = os.getcwd()
              
         self.execution_dialog = ExecutionDialog(global_savepath, self, 
                                                 save_log=self.pipeline_settings.get('save_matlab_log', False))
