@@ -36,8 +36,41 @@ function pop_launch_dag()
             % macOS requires the 'open' command for .app bundles
             command = sprintf('open "%s"', bin_path);
         elseif ispc
-            % On Windows, CD into the directory first to help PyInstaller find its 
-            % PKG archive and DLLs, especially on network drives or long paths.
+            % Check if we are on a network drive or non-local drive
+            is_local = startsWith(bin_path, 'C:', 'IgnoreCase', true);
+            if ~is_local
+                fprintf('Network/Non-local drive detected. Mirroring to local temp folder for stability...\n');
+                
+                % Create a local cache directory in the user's temp folder
+                local_root = fullfile(tempdir, 'EEGLAB-DAG-Cache');
+                if ~exist(local_root, 'dir'); mkdir(local_root); end
+                
+                % Use a subfolder named after the parent directory structure to avoid collisions
+                [bin_dir, bin_name, bin_ext] = fileparts(bin_path);
+                
+                % Extract a unique hash or name from the path to ensure separate caches
+                % for different versions or locations
+                path_hash = sprintf('%x', sum(double(bin_dir)));
+                local_dir = fullfile(local_root, path_hash);
+                
+                % Use xcopy /D /S /I /Y to only copy newer files
+                % /D - copies only those files whose source time is newer than the destination time
+                % /S - copies directories and subdirectories except empty ones
+                % /I - if destination does not exist and copying more than one file, assumes that destination must be a directory
+                % /Y - suppresses prompting to confirm you want to overwrite an existing destination file
+                copy_cmd = sprintf('xcopy /D /S /I /Y "%s" "%s"', bin_dir, local_dir);
+                [status, cmdout] = system(copy_cmd);
+                
+                if status == 0
+                    fprintf('Mirroring complete. Launching from local cache.\n');
+                    bin_path = fullfile(local_dir, [bin_name bin_ext]);
+                    bin_dir = local_dir;
+                else
+                    fprintf('Mirroring failed (Status %d): %s\n', status, cmdout);
+                    fprintf('Attempting to launch from original location...\n');
+                end
+            end
+            
             [bin_dir, bin_name, bin_ext] = fileparts(bin_path);
             command = sprintf('cd /d "%s" && start "" "%s%s"', bin_dir, bin_name, bin_ext);
         else
