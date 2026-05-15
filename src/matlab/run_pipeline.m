@@ -339,7 +339,7 @@ function process_single_file(file_path, steps)
                 end
                 
                 % Auto-parse potential lists for channel/index parameters
-                list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
+                list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps', 'trials', 'items', 'chan'};
                 if ismember(pname, list_params)
                     pval = util_parse_list(pval);
                 end
@@ -387,11 +387,11 @@ end
 
 function val = util_parse_list(val)
     % Parses a space/comma separated string into a numeric array or cell array of strings.
-    if ~ischar(val) || isempty(val)
+    if (~ischar(val) && ~isstring(val)) || isempty(val)
         return;
     end
     
-    val = strtrim(val);
+    val = strtrim(char(val));
     
     % Strip brackets if present
     if startsWith(val, '[') && endsWith(val, ']')

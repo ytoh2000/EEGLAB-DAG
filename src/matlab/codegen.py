@@ -369,7 +369,7 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
             end
             
             % Auto-parse potential lists
-            list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
+            list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps', 'trials', 'items', 'chan'};
             if ismember(fields{i}, list_params)
                 val = util_parse_list(val);
             end
@@ -456,7 +456,7 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
             end
             
             % Auto-parse potential lists
-            list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
+            list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps', 'trials', 'items', 'chan'};
             if ismember(fields{i}, list_params)
                 val = util_parse_list(val);
             end
@@ -548,11 +548,11 @@ end
 
 function val = util_parse_list(val)
     % Parses a space/comma separated string into a numeric array or cell array of strings.
-    if ~ischar(val) || isempty(val)
+    if (~ischar(val) && ~isstring(val)) || isempty(val)
         return;
     end
     
-    val = strtrim(val);
+    val = strtrim(char(val));
     
     % Strip brackets if present
     if startsWith(val, '[') && endsWith(val, ']')
