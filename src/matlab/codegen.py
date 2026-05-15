@@ -259,29 +259,28 @@ class CodeGenerator:
             
         # For known list params, try to parse it into a MATLAB array string if it's a string
         if isinstance(pval, str):
-            # ... existing logic ...
-        val = pval.strip()
-        if val.startswith('[') and val.endswith(']'):
-            val = val[1:-1].strip()
-        if (val.startswith("'") and val.endswith("'")) or (val.startswith('"') and val.endswith('"')):
-            val = val[1:-1]
+            val = pval.strip()
+            if val.startswith('[') and val.endswith(']'):
+                val = val[1:-1].strip()
+            if (val.startswith("'") and val.endswith("'")) or (val.startswith('"') and val.endswith('"')):
+                val = val[1:-1]
+                
+            if not val:
+                return "[]"
             
-        if not val:
-            return "[]"
+            # Split by space or comma
+            parts = [p.strip() for p in val.replace(',', ' ').split(' ') if p.strip()]
+            if not parts: return "[]"
             
-        import re
-        parts = re.split(r'[,\s]+', val)
-        parts = [p.strip().replace("'", "").replace('"', "") for p in parts if p.strip()]
-        
-        if not parts:
-            return "[]"
+            # If all parts are numeric, format as [1 2 3]
+            try:
+                [float(p) for p in parts]
+                return "[" + " ".join(parts) + "]"
+            except:
+                # Else format as {'a', 'b'}
+                return "{" + ", ".join([f"'{p}'" for p in parts]) + "}"
             
-        # Check if all are numbers
-        try:
-            [float(p) for p in parts]
-            return "[" + " ".join(parts) + "]"
-        except ValueError:
-            return "{" + ", ".join([f"'{p}'" for p in parts]) + "}"
+        return str(pval)
         
     def _get_boilerplate(self):
         return """
