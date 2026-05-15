@@ -50,24 +50,39 @@ function pop_launch_dag()
                 
                 % Extract a unique hash or name from the path to ensure separate caches
                 % for different versions or locations
+                % Extract a unique hash or name from the path to ensure separate caches
+                % for different versions or locations
                 path_hash = sprintf('%x', sum(double(bin_dir)));
                 local_dir = fullfile(local_root, path_hash);
                 
-                % Use xcopy /D /S /I /Y to only copy newer files
-                % /D - copies only those files whose source time is newer than the destination time
-                % /S - copies directories and subdirectories except empty ones
-                % /I - if destination does not exist and copying more than one file, assumes that destination must be a directory
-                % /Y - suppresses prompting to confirm you want to overwrite an existing destination file
-                copy_cmd = sprintf('xcopy /D /S /I /Y "%s" "%s"', bin_dir, local_dir);
-                [status, cmdout] = system(copy_cmd);
+                % Mirror the critical folders (bin and library) to local cache
+                % This ensures that relative paths like ../../../library/nodes work
+                folders_to_copy = {'bin', 'library'};
+                success_count = 0;
                 
-                if status == 0
+                for f = 1:length(folders_to_copy)
+                    src_f = fullfile(plugin_path, folders_to_copy{f});
+                    dst_f = fullfile(local_dir, folders_to_copy{f});
+                    
+                    if exist(src_f, 'dir')
+                        % Use xcopy /D /S /I /Y to only copy newer files
+                        copy_cmd = sprintf('xcopy /D /S /I /Y "%s" "%s"', src_f, dst_f);
+                        [status, ~] = system(copy_cmd);
+                        if status == 0
+                            success_count = success_count + 1;
+                        end
+                    end
+                end
+                
+                if success_count == length(folders_to_copy)
                     fprintf('Mirroring complete. Launching from local cache.\n');
-                    bin_path = fullfile(local_dir, [bin_name bin_ext]);
-                    bin_dir = local_dir;
+                    % Update bin_path and bin_dir to point to the local copy
+                    [~, bin_name, bin_ext] = fileparts(bin_path);
+                    % Original bin_path was plugin_path/bin/win64/main/main.exe
+                    % New bin_path should be local_dir/bin/win64/main/main.exe
+                    bin_path = fullfile(local_dir, 'bin', 'win64', 'main', [bin_name bin_ext]);
                 else
-                    fprintf('Mirroring failed (Status %d): %s\n', status, cmdout);
-                    fprintf('Attempting to launch from original location...\n');
+                    fprintf('Mirroring partially failed. Attempting to launch from original location...\n');
                 end
             end
             
