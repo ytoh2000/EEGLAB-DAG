@@ -210,6 +210,13 @@ class CodeGenerator:
     def _format_param_for_matlab(self, pname, pval):
         list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'}
         if pname not in list_params:
+            # Handle Key-Value list (list of pairs)
+            if isinstance(pval, list) and pval and isinstance(pval[0], list) and len(pval[0]) == 2:
+                items = []
+                for k, v in pval:
+                    v_repr = f"'{v}'" if isinstance(v, str) else str(v).lower() if isinstance(v, bool) else str(v)
+                    items.append(f"{{'{k}', {v_repr}}}")
+                return "{" + ", ".join(items) + "}"
             return f"'{pval}'"
             
         # Try to parse it into a MATLAB array string
@@ -307,6 +314,16 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
             val = stepParam.(fields{i});
             if isempty(val); continue; end
             
+            % Auto-expand Key-Value list (list of pairs)
+            if iscell(val) && ~isempty(val) && iscell(val{1}) && length(val{1}) == 2
+                 for i_pair = 1:length(val)
+                     pair = val{i_pair};
+                     args{end+1} = pair{1};
+                     args{end+1} = pair{2};
+                 end
+                 continue;
+            end
+            
             % Auto-parse potential lists
             list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
             if ismember(fields{i}, list_params)
@@ -383,6 +400,16 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
             
             val = stepParam.(fields{i});
             if isempty(val); continue; end
+            
+            % Auto-expand Key-Value list (list of pairs)
+            if iscell(val) && ~isempty(val) && iscell(val{1}) && length(val{1}) == 2
+                 for i_pair = 1:length(val)
+                     pair = val{i_pair};
+                     args{end+1} = pair{1};
+                     args{end+1} = pair{2};
+                 end
+                 continue;
+            end
             
             % Auto-parse potential lists
             list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};

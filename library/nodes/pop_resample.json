@@ -23,20 +23,15 @@
             "default": 250
         },
         {
-            "name": "fc",
-            "type": "float",
-            "arg_type": "positional",
-            "description": "Anti-aliasing filter cutoff (pi rad / sample).",
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional resampling options",
             "required": false,
-            "default": 0.9
-        },
-        {
-            "name": "df",
-            "type": "float",
-            "arg_type": "positional",
-            "description": "Anti-aliasing filter transition band width.",
-            "required": false,
-            "default": 0.2
+            "allowed_keys": {
+                "fc": "Anti-aliasing filter cutoff (pi rad / sample) {default 0.9}",
+                "df": "Anti-aliasing filter transition band width {default 0.2}"
+            },
+            "default": []
         }
     ],
     "outputs": [

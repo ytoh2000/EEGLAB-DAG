@@ -31,29 +31,18 @@
             "default": "[-1 2]"
         },
         {
-            "name": "valuelim",
-            "type": "string",
-            "description": "Rejection limits [min max] or [max] (e.g. [-100 100]).",
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional epoching options",
             "required": false,
-            "default": "[]"
-        },
-        {
-            "name": "newname",
-            "type": "string",
-            "description": "New dataset name",
-            "required": false,
-            "default": ""
-        },
-        {
-            "name": "epochinfo",
-            "type": "enum",
-            "description": "Propagate event info?",
-            "required": false,
-            "options": [
-                "yes",
-                "no"
-            ],
-            "default": "yes"
+            "allowed_keys": {
+                "valuelim": "Rejection limits [min max] or [max] (e.g. [-100 100])",
+                "newname": "New dataset name",
+                "epochinfo": "Propagate event information into the new epoch structure ('yes'|'no')",
+                "eventindices": "Extract epochs time-locked to these indexed event numbers",
+                "verbose": "Show verbose output ('yes'|'no')"
+            },
+            "default": []
         }
     ],
     "outputs": [

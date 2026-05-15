@@ -31,13 +31,6 @@
             "default": 80
         },
         {
-            "name": "filtorder",
-            "type": "integer",
-            "arg_type": "positional",
-            "description": "Filter order. Leave empty for automatic.",
-            "required": false
-        },
-        {
             "name": "revfilt",
             "type": "bool",
             "arg_type": "positional",
@@ -45,18 +38,17 @@
             "default": false
         },
         {
-            "name": "minphase",
-            "type": "bool",
-            "arg_type": "positional",
-            "description": "Use minimum-phase converted causal filter",
-            "default": false
-        },
-        {
-            "name": "plotfreqz",
-            "type": "bool",
-            "arg_type": "positional",
-            "description": "Plot frequency response",
-            "default": false
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional filtering options",
+            "required": false,
+            "allowed_keys": {
+                "filtorder": "Filter order (filter length - 1). Mandatory even.",
+                "minphase": "Use minimum-phase converted causal filter (true/false)",
+                "plotfreqz": "Plot frequency response (true/false)",
+                "usefft": "Ignored (backward compatibility only)"
+            },
+            "default": []
         }
     ],
     "outputs": [

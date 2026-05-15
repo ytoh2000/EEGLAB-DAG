@@ -79,6 +79,23 @@
             "required": true,
             "default": "-Inf 7",
             "can_disable": true
+        },
+        {
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional advanced parameters for cleaning",
+            "required": false,
+            "allowed_keys": {
+                "ChannelCriterionMaxBadTime": "Max tolerated fraction of recording a channel may be flagged bad",
+                "BurstCriterionRefMaxBadChns": "Max tolerated fraction of bad channels in calibration data",
+                "BurstCriterionRefTolerances": "Power tolerances for channel in calibration data",
+                "BurstRejection": "Reject portions containing burst instead of correcting ('on'|'off')",
+                "FlatlineCriterion": "Max tolerated flatline duration (seconds)",
+                "NoLocsChannelCriterion": "Min correlation value for bad channel removal (no locs)",
+                "NoLocsChannelCriterionExcluded": "Fraction of channels must be correlated for 'good'",
+                "MaxMem": "Max memory in MB used by algorithm"
+            },
+            "default": []
         }
     ],
     "outputs": [

@@ -1,4 +1,7 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog, QTabWidget, QTextEdit, QSizePolicy
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit, QDialogButtonBox, 
+                             QLabel, QComboBox, QCheckBox, QWidget, QHBoxLayout, QFileDialog, 
+                             QTabWidget, QTextEdit, QSizePolicy, QTableWidget, QTableWidgetItem, 
+                             QHeaderView, QPushButton)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QIntValidator, QFont
 
@@ -235,6 +238,12 @@ class PropertiesDialog(QDialog):
                 val = []
             widget = FileListWidget(val)
 
+        elif inp_type == 'key_value_list':
+            if not isinstance(val, list):
+                val = []
+            allowed_keys = inp.get('allowed_keys', {})
+            widget = KeyValueListWidget(val, allowed_keys)
+
         else: # string, float, int
             display_val = val if not is_off else default
             widget = QLineEdit(str(display_val) if display_val is not None else "")
@@ -390,6 +399,8 @@ class PropertiesDialog(QDialog):
                 new_params[name] = widget.get_path()
             elif isinstance(widget, FileListWidget):
                 new_params[name] = widget.get_files()
+            elif isinstance(widget, KeyValueListWidget):
+                new_params[name] = widget.get_data()
                 
         if hasattr(self, 'importer_files') and self.importer_files:
             new_params['file_paths'] = self.importer_files
@@ -466,9 +477,112 @@ class PropertiesDialog(QDialog):
                     widget.setStyleSheet('QLineEdit { border: 1px solid #66BB6A; }')
         self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(all_valid)
 
-from PyQt6.QtWidgets import QPushButton, QTextEdit
 import os
 import glob
+
+class KeyValueListWidget(QWidget):
+    def __init__(self, initial_data=None, allowed_keys=None, parent=None):
+        super().__init__(parent)
+        self.allowed_keys = allowed_keys or {} # key -> description
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.table = QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["Parameter", "Value"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setMaximumHeight(150)
+        self.table.setAlternatingRowColors(True)
+        layout.addWidget(self.table)
+        
+        btn_layout = QHBoxLayout()
+        self.add_btn = QPushButton("+ Add Row")
+        self.add_btn.setStyleSheet("background-color: #E8F5E9; color: #2E7D32; font-weight: bold;")
+        self.add_btn.clicked.connect(lambda: self.add_row())
+        btn_layout.addWidget(self.add_btn)
+        
+        self.remove_btn = QPushButton("- Remove Selected")
+        self.remove_btn.setStyleSheet("background-color: #FFEBEE; color: #C62828;")
+        self.remove_btn.clicked.connect(self.remove_row)
+        btn_layout.addWidget(self.remove_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        # Load initial data
+        if initial_data and isinstance(initial_data, list):
+            for pair in initial_data:
+                if isinstance(pair, list) and len(pair) == 2:
+                    self.add_row(pair[0], pair[1])
+
+    def add_row(self, key="", value=""):
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        
+        # Key widget: ComboBox if allowed_keys exists, else LineEdit
+        if self.allowed_keys:
+            key_widget = QComboBox()
+            key_widget.setEditable(True)
+            sorted_keys = sorted(self.allowed_keys.keys())
+            key_widget.addItems(sorted_keys)
+            if key:
+                key_widget.setCurrentText(str(key))
+            else:
+                key_widget.setCurrentIndex(-1)
+            
+            # Show tooltip if a known key is selected
+            def update_tooltip(idx):
+                k = key_widget.currentText()
+                if k in self.allowed_keys:
+                    key_widget.setToolTip(self.allowed_keys[k])
+            
+            key_widget.currentIndexChanged.connect(update_tooltip)
+            key_widget.editTextChanged.connect(lambda: update_tooltip(0))
+            self.table.setCellWidget(row, 0, key_widget)
+        else:
+            self.table.setItem(row, 0, QTableWidgetItem(str(key)))
+            
+        val_item = QTableWidgetItem(str(value))
+        if value == "" and self.allowed_keys and key in self.allowed_keys:
+            # Maybe use a placeholder? items don't support placeholders well
+            pass
+        self.table.setItem(row, 1, val_item)
+
+    def remove_row(self):
+        current_row = self.table.currentRow()
+        if current_row >= 0:
+            self.table.removeRow(current_row)
+
+    def get_data(self):
+        data = []
+        for r in range(self.table.rowCount()):
+            key_widget = self.table.cellWidget(r, 0)
+            if isinstance(key_widget, QComboBox):
+                k = key_widget.currentText().strip()
+            else:
+                k_item = self.table.item(r, 0)
+                k = k_item.text().strip() if k_item else ""
+                
+            v_item = self.table.item(r, 1)
+            v_str = v_item.text().strip() if v_item else ""
+            
+            if k:
+                # Try to parse value as number if possible
+                try:
+                    if '.' in v_str:
+                        v_parsed = float(v_str)
+                    else:
+                        v_parsed = int(v_str)
+                except ValueError:
+                    # Keep as string or bool
+                    if v_str.lower() == 'true': v_parsed = True
+                    elif v_str.lower() == 'false': v_parsed = False
+                    elif v_str.lower() == 'on': v_parsed = True
+                    elif v_str.lower() == 'off': v_parsed = False
+                    else: v_parsed = v_str
+                
+                data.append([k, v_parsed])
+        return data
 
 class FileListWidget(QWidget):
     def __init__(self, initial_files=None, parent=None):

@@ -70,44 +70,18 @@
             "default": ""
         },
         {
-            "name": "isPeriodogram",
-            "type": "bool",
-            "arg_type": "positional",
-            "description": "Detect outlier channels using windowed periodogram analysis",
-            "required": true,
-            "default": false
-        },
-        {
-            "name": "frange",
-            "type": "string",
-            "arg_type": "positional",
-            "description": "Frequency range for periodogram analysis [LowFreq HighFreq] in Hz (e.g. '[1 20]')",
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional NEAR rejection options",
             "required": false,
-            "default": "[1 20]"
-        },
-        {
-            "name": "winsize",
-            "type": "float",
-            "arg_type": "positional",
-            "description": "Window length for periodogram analysis in seconds",
-            "required": false,
-            "default": 1
-        },
-        {
-            "name": "winov",
-            "type": "float",
-            "arg_type": "positional",
-            "description": "Window overlap factor for periodogram analysis (0-1)",
-            "required": false,
-            "default": 0.66
-        },
-        {
-            "name": "pthresh",
-            "type": "float",
-            "arg_type": "positional",
-            "description": "Threshold to decide outlier channels based on periodogram analysis",
-            "required": false,
-            "default": 4.5
+            "allowed_keys": {
+                "isPeriodogram": "Detect outlier channels using windowed periodogram analysis (true/false)",
+                "frange": "Frequency range for periodogram analysis [LowFreq HighFreq] (e.g. '[1 20]')",
+                "winsize": "Window length for periodogram analysis in seconds",
+                "winov": "Window overlap factor (0-1)",
+                "pthresh": "Threshold for periodogram-based outlier detection"
+            },
+            "default": []
         },
         {
             "name": "isPlot",

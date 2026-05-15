@@ -14,35 +14,17 @@
             "default": ""
         },
         {
-            "name": "channels",
-            "type": "string",
-            "description": "List of channel indices (e.g. '1:32'). Leave empty for all.",
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional FileIO import options",
             "required": false,
-            "default": ""
-        },
-        {
-            "name": "samples",
-            "type": "string",
-            "description": "Sample range [min max] (e.g. '1 1000'). Leave empty for all.",
-            "required": false,
-            "default": ""
-        },
-        {
-            "name": "trials",
-            "type": "string",
-            "description": "Trial range [min max]. Leave empty for all.",
-            "required": false,
-            "default": ""
-        },
-        {
-            "name": "memorymapped",
-            "type": "enum",
-            "options": [
-                "on",
-                "off"
-            ],
-            "description": "Import as memory mapped file",
-            "default": "off"
+            "allowed_keys": {
+                "channels": "List of channel indices (e.g. '1:32')",
+                "samples": "Sample range [min max] (e.g. '1 1000')",
+                "trials": "Trial range [min max]",
+                "memorymapped": "Import as memory mapped file ('on'|'off')"
+            },
+            "default": []
         }
     ],
     "outputs": [

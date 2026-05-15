@@ -70,6 +70,16 @@
                 "off"
             ],
             "default": "on"
+        },
+        {
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional auto-rejection options",
+            "required": false,
+            "allowed_keys": {
+                "verbose": "Show verbose output ('on'|'off')"
+            },
+            "default": []
         }
     ],
     "outputs": [

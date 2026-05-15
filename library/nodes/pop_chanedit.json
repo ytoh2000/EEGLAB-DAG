@@ -35,10 +35,16 @@
             "default": ""
         },
         {
-            "name": "headrad",
-            "type": "float",
-            "description": "Head radius (optional, e.g. for spherical models).",
-            "required": false
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional channel editing options",
+            "required": false,
+            "allowed_keys": {
+                "headrad": "Change head radius (float)",
+                "skirt": "Topographical polar skirt factor",
+                "shrink": "Topographical polar shrink factor"
+            },
+            "default": []
         }
     ],
     "outputs": [

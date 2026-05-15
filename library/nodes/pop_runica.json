@@ -28,26 +28,22 @@
         },
         {
             "name": "options",
-            "type": "string",
-            "description": "Additional command line options for the algorithm (e.g. 'pca', 10)",
+            "type": "key_value_list",
+            "description": "Additional command line options for the algorithm",
             "required": false,
-            "default": ""
-        },
-        {
-            "name": "chanind",
-            "type": "string",
-            "description": "Channel indices to use (e.g. '1:32')",
-            "required": false
-        },
-        {
-            "name": "concatenate",
-            "type": "enum",
-            "description": "Concatenate all input datasets",
-            "options": [
-                "on",
-                "off"
-            ],
-            "default": "off"
+            "allowed_keys": {
+                "chanind": "Subset of channel indices for ICA decomposition",
+                "concatenate": "Concatenate all input datasets ('on'|'off')",
+                "pca": "Reduce dimensions using PCA (e.g. 10 or 'off')",
+                "extended": "Use extended infomax (1 for sub-Gaussian, 0 for regular)",
+                "lrate": "Initial learning rate (e.g. 0.001)",
+                "maxsteps": "Maximum number of training steps (e.g. 512)",
+                "stop": "Stopping criterion (weight change e.g. 1e-7)",
+                "anneal": "Annealing factor (e.g. 0.9)",
+                "annealdeg": "Annealing degree (e.g. 60)",
+                "momentum": "Momentum term (e.g. 0)"
+            },
+            "default": []
         }
     ],
     "outputs": [

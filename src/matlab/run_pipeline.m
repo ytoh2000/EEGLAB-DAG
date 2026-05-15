@@ -321,6 +321,17 @@ function process_single_file(file_path, steps)
                     end
                 end
                 
+                % Detect and flatten Key-Value list (list of pairs)
+                % In MATLAB, these come in as {{'key1', val1}, {'key2', val2}}
+                if iscell(pval) && ~isempty(pval) && iscell(pval{1}) && length(pval{1}) == 2
+                    for i_pair = 1:length(pval)
+                        pair = pval{i_pair};
+                        mapped_args{end+1} = pair{1};
+                        mapped_args{end+1} = pair{2};
+                    end
+                    continue;
+                end
+
                 if iscell(pval) && iscellstr(pval)
                      % keep
                 elseif ischar(pval)

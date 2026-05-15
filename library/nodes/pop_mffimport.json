@@ -22,26 +22,15 @@
             "default": "code"
         },
         {
-            "name": "savedat",
-            "type": "enum",
-            "description": "Automatically save imported dataset?",
+            "name": "options",
+            "type": "key_value_list",
+            "description": "Additional MFF import options",
             "required": false,
-            "options": [
-                "yes",
-                "no"
-            ],
-            "default": "no"
-        },
-        {
-            "name": "correctevents",
-            "type": "enum",
-            "description": "Automatically correct events?",
-            "required": false,
-            "options": [
-                "yes",
-                "no"
-            ],
-            "default": "no"
+            "allowed_keys": {
+                "savedat": "Automatically save imported dataset ('yes'|'no')",
+                "correctevents": "Automatically correct events ('yes'|'no')"
+            },
+            "default": []
         }
     ],
     "outputs": [
