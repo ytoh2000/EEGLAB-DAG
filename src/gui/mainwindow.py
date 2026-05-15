@@ -468,17 +468,49 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Validation Error", error_msg)
             return
             
+        # 1. Determine global savepath and initialize execution dialog immediately
+        # This ensures that logging starts before any preparation steps.
+        global_savepath = self.pipeline_settings.get('global_savepath', '')
+        if not global_savepath:
+             global_savepath = self.cwd_edit.text()
+             
+        self.execution_dialog = ExecutionDialog(global_savepath, self, 
+                                                save_log=self.pipeline_settings.get('save_matlab_log', False))
+        self.execution_dialog.show()
+        self.execution_dialog.append_message("> Initializing execution environment...")
+        
         import tempfile
         import os
         import shutil
         from src.model.job_exporter import JobExporter
-        
-        # Create a temporary directory for the job
-        temp_dir = tempfile.mkdtemp(prefix='dag_run_')
-        temp_path = os.path.join(temp_dir, 'pipeline_job.json')
+        from datetime import datetime
         
         try:
+            # 2. Generate and save MATLAB script if requested (before starting process)
+            if self.pipeline_settings.get('save_matlab_code', False):
+                try:
+                    from src.matlab.codegen import CodeGenerator
+                    generator = CodeGenerator(pipeline)
+                    
+                    matlab_dir = os.path.join(global_savepath, "matlab")
+                    if not os.path.exists(matlab_dir):
+                        os.makedirs(matlab_dir, exist_ok=True)
+                    
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    script_filename = f"generated_script_{timestamp}.m"
+                    script_path = os.path.join(matlab_dir, script_filename)
+                    
+                    generator.generate(script_path)
+                    self.execution_dialog.append_message(f"> Standalone MATLAB script saved to: {script_path}")
+                except Exception as e:
+                    self.execution_dialog.append_message(f"> Warning: Could not save MATLAB script: {e}")
+
+            # 3. Create a temporary directory for the job
+            temp_dir = tempfile.mkdtemp(prefix='dag_run_')
+            temp_path = os.path.join(temp_dir, 'pipeline_job.json')
+            
             pipeline.save(temp_path)
+            self.execution_dialog.append_message(f"> Exported temporary job file: {temp_path}")
             
             eeglab_path = self.app_settings.get_eeglab_path()
             
@@ -491,7 +523,6 @@ class MainWindow(QMainWindow):
                 src_matlab_dir = os.path.abspath(os.path.join(base_dir, '..', 'matlab'))
             
             # Copy run_pipeline.m to the temp directory to ensure MATLAB can access it
-            # This avoids "Permission Denied" errors on the source directory (common on network drives)
             shutil.copy(os.path.join(src_matlab_dir, "run_pipeline.m"), temp_dir)
             
             # Convert paths to use forward slashes for MATLAB consistency
@@ -505,32 +536,7 @@ class MainWindow(QMainWindow):
             else:
                 cmd_inner = f"addpath('{temp_dir_fwd}'); run_pipeline('{temp_path_fwd}'); exit;"
                 
-            # Pass global savepath to execution dialog so the user can open it
-            global_savepath = self.pipeline_settings.get('global_savepath', '')
-            if not global_savepath:
-                 global_savepath = self.cwd_edit.text()
-            
-            # 1. Generate and save MATLAB script if requested
-            if self.pipeline_settings.get('save_matlab_code', False):
-                try:
-                    from src.matlab.codegen import CodeGenerator
-                    generator = CodeGenerator(pipeline)
-                    
-                    matlab_dir = os.path.join(global_savepath, "matlab")
-                    if not os.path.exists(matlab_dir):
-                        os.makedirs(matlab_dir, exist_ok=True)
-                    
-                    from datetime import datetime
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    script_filename = f"generated_script_{timestamp}.m"
-                    script_path = os.path.join(matlab_dir, script_filename)
-                    
-                    generator.generate(script_path)
-                except Exception as e:
-                    # Don't halt execution just because script saving failed, but warn
-                    print(f"Warning: Could not save MATLAB script: {e}")
-
-            self.execution_dialog = ExecutionDialog(global_savepath, self, save_log=self.pipeline_settings.get('save_matlab_log', False))
+            # 4. Start MATLAB process
             self.execution_dialog.start_execution(matlab_path, ["-batch", cmd_inner])
             
         except Exception as e:

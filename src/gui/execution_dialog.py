@@ -13,6 +13,9 @@ class ExecutionDialog(QDialog):
         self.resize(700, 500)
         self.setModal(False) # Non-modal so user can interact with main window if needed
         
+        if self.save_log and self.global_savepath:
+            self._setup_logging()
+        
         layout = QVBoxLayout(self)
         
         self.output_view = QPlainTextEdit(self)
@@ -60,15 +63,22 @@ class ExecutionDialog(QDialog):
         
     def start_execution(self, program, arguments):
         """Starts the process and displays the dialog."""
-        self.output_view.clear()
         cmd_str = f"{program} " + " ".join([f'"{arg}"' if ' ' in arg else arg for arg in arguments])
-        self.output_view.appendPlainText(f"> Starting MATLAB Execution...\n> Command: {cmd_str}\n")
+        self.append_message(f"> Starting MATLAB Execution...\n> Command: {cmd_str}\n")
         
-        if self.save_log and self.global_savepath:
-            self._setup_logging()
-            
         self.process.start(program, arguments)
         self.show()
+
+    def append_message(self, text):
+        """Appends text to the output view and the log file if open."""
+        self.output_view.appendPlainText(text)
+        if self.log_file:
+            # Ensure text ends with newline for file
+            file_text = text if text.endswith('\n') else text + '\n'
+            self.log_file.write(file_text)
+            self.log_file.flush()
+        # Scroll to bottom
+        self.output_view.ensureCursorVisible()
 
     def _setup_logging(self):
         import os

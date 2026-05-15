@@ -145,7 +145,22 @@ function run_pipeline(job_file)
 
 end
 
-function process_single_file(file_path, steps)
+    % Robust path handling for cross-platform (e.g. Mac /Volumes/ paths on Windows)
+    if ispc && ~exist(file_path, 'file') && startsWith(file_path, '/Volumes/')
+        % On Windows, /Volumes/VolumeName/Path often maps to Drive:\Path
+        % If the current drive is already mapped to the volume, we try stripping the prefix.
+        parts = strsplit(file_path, '/');
+        if length(parts) >= 4
+            % Try stripping /Volumes/VolumeName/
+            alt_path = strjoin(parts(4:end), filesep);
+            if exist(alt_path, 'file')
+                file_path = alt_path;
+            elseif exist(fullfile(pwd, alt_path), 'file')
+                file_path = fullfile(pwd, alt_path);
+            end
+        end
+    end
+
     [~, fname, fext] = fileparts(file_path);
     current_EEG = []; 
     transfers = struct(); % Store transferred subfields (e.g. chanlocs)
