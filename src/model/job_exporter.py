@@ -1,4 +1,5 @@
 import json
+import re
 import networkx as nx
 from src.model.pipeline import Pipeline
 
@@ -188,7 +189,8 @@ class JobExporter:
             else:
                 for k, v in node.params.items():
                     if v != 'off' and v != '':
-                        arguments.extend([k, v])
+                        formatted_val = self._format_value(k, v, None)
+                        arguments.extend([k, formatted_val])
                 
             step_info = {
                 "function": func_name,
@@ -236,7 +238,6 @@ class JobExporter:
                 return []
             
             # Split by space or comma
-            import re
             parts = [p.strip() for p in re.split(r'[,\s]+', val) if p.strip()]
             
             if not parts:
