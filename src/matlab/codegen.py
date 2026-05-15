@@ -62,6 +62,8 @@ class CodeGenerator:
         code.append(f"param.openWeb = {str(settings.get('generate_report', True)).lower()};")
         code.append(f"param.path_globalSavepath = '{settings.get('global_savepath', '')}';")
         code.append(f"param.pipeline_id = '{settings.get('pipeline_id', 'DAG')}';")
+        code.append(f"param.bids_modality = '{settings.get('bids_modality', 'eeg')}';")
+        code.append(f"param.bids_default_task = '{settings.get('bids_default_task', '')}';")
         code.append("")
         
         node_counts = {}
@@ -232,10 +234,10 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
     try
         % Handle BIDS-compliant global output folder for pop_saveset
         if strcmp(funcName, 'pop_saveset') && isfield(stepParam, 'use_global_savepath') && stepParam.use_global_savepath
-            % Build BIDS Derivatives path: derivatives/<pipeline_id>/sub-XX/ses-YY/eeg/
+            % Build BIDS Derivatives path: derivatives/<pipeline_id>/sub-XX/ses-YY/<modality>/
             save_path = fullfile(param.path_globalSavepath, 'derivatives', param.pipeline_id, param.sub);
             if ~isempty(param.ses); save_path = fullfile(save_path, param.ses); end
-            save_path = fullfile(save_path, 'eeg');
+            save_path = fullfile(save_path, param.bids_modality);
             
             if ~exist(save_path, 'dir'); mkdir(save_path); end
             stepParam.filepath = save_path;
@@ -246,9 +248,15 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
             
             fname = param.sub;
             if ~isempty(param.ses); fname = [fname '_' param.ses]; end
-            if ~isempty(param.task); fname = [fname '_' param.task]; end
+            
+            task_tag = param.task;
+            if isempty(task_tag) && ~isempty(param.bids_default_task)
+                task_tag = param.bids_default_task;
+                if ~startsWith(task_tag, 'task-'); task_tag = ['task-' task_tag]; end
+            end
+            if ~isempty(task_tag); fname = [fname '_' task_tag]; end
             if ~isempty(param.run); fname = [fname '_' param.run]; end
-            fname = [fname '_desc-' suffix '_eeg.set'];
+            fname = [fname '_desc-' suffix '_' param.bids_modality '.set'];
             
             stepParam.filename = fname;
         end
@@ -316,7 +324,13 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
             % Build BIDS-aware filename: sub-01_ses-01_task-rest_desc-topoplot.png
             fname = param.sub;
             if ~isempty(param.ses); fname = [fname '_' param.ses]; end
-            if ~isempty(param.task); fname = [fname '_' param.task]; end
+            
+            task_tag = param.task;
+            if isempty(task_tag) && ~isempty(param.bids_default_task)
+                task_tag = param.bids_default_task;
+                if ~startsWith(task_tag, 'task-'); task_tag = ['task-' task_tag]; end
+            end
+            if ~isempty(task_tag); fname = [fname '_' task_tag]; end
             if ~isempty(param.run); fname = [fname '_' param.run]; end
             
             % Use the node label or function name as the plot description

@@ -16,8 +16,7 @@ class Pipeline:
             "bids_dataset_name": "",
             "bids_authors": "",
             "bids_default_task": "",
-            "bids_modality": "eeg",
-            "bids_anonymize": False
+            "bids_modality": "eeg"
         }
         
     def add_node(self, node_data):
@@ -83,8 +82,7 @@ class Pipeline:
             "bids_dataset_name": "",
             "bids_authors": "",
             "bids_default_task": "",
-            "bids_modality": "eeg",
-            "bids_anonymize": False
+            "bids_modality": "eeg"
         })
         
         # Migrate old settings
