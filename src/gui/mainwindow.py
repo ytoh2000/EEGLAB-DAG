@@ -22,7 +22,8 @@ class MainWindow(QMainWindow):
             "test_mode": False,
             "test_sample_size": 1,
             "parallel_processing": False,
-            "global_savepath": ""
+            "global_savepath": "",
+            "save_matlab_log": False
         }
         
         self.app_settings = AppSettingsManager()
@@ -468,11 +469,12 @@ class MainWindow(QMainWindow):
             
         import tempfile
         import os
+        import shutil
         from src.model.job_exporter import JobExporter
         
-        # Export temporary json
-        fd, temp_path = tempfile.mkstemp(suffix='.json', text=True)
-        os.close(fd)
+        # Create a temporary directory for the job
+        temp_dir = tempfile.mkdtemp(prefix='dag_run_')
+        temp_path = os.path.join(temp_dir, 'pipeline_job.json')
         
         try:
             pipeline.save(temp_path)
@@ -482,29 +484,32 @@ class MainWindow(QMainWindow):
             import sys
             if getattr(sys, 'frozen', False):
                 base_dir = os.path.dirname(sys.executable)
-                src_matlab = os.path.abspath(os.path.join(base_dir, '..', '..', '..', 'src', 'matlab'))
+                src_matlab_dir = os.path.abspath(os.path.join(base_dir, '..', '..', '..', 'src', 'matlab'))
             else:
                 base_dir = os.path.dirname(os.path.abspath(__file__))
-                src_matlab = os.path.abspath(os.path.join(base_dir, '..', 'matlab'))
+                src_matlab_dir = os.path.abspath(os.path.join(base_dir, '..', 'matlab'))
             
-            # Convert paths to use forward slashes to avoid escape character issues in MATLAB -batch
-            if eeglab_path:
-                eeglab_path = eeglab_path.replace('\\', '/')
-            src_matlab = src_matlab.replace('\\', '/')
+            # Copy run_pipeline.m to the temp directory to ensure MATLAB can access it
+            # This avoids "Permission Denied" errors on the source directory (common on network drives)
+            shutil.copy(os.path.join(src_matlab_dir, "run_pipeline.m"), temp_dir)
+            
+            # Convert paths to use forward slashes for MATLAB consistency
+            temp_dir_fwd = temp_dir.replace('\\', '/')
             temp_path_fwd = temp_path.replace('\\', '/')
+            eeglab_path_fwd = eeglab_path.replace('\\', '/') if eeglab_path else ""
             
             # Construct MATLAB command
-            if eeglab_path:
-                cmd_inner = f"addpath('{eeglab_path}'); eeglab nogui; addpath('{src_matlab}'); run_pipeline('{temp_path_fwd}'); exit;"
+            if eeglab_path_fwd:
+                cmd_inner = f"addpath('{eeglab_path_fwd}'); eeglab nogui; addpath('{temp_dir_fwd}'); run_pipeline('{temp_path_fwd}'); exit;"
             else:
-                cmd_inner = f"addpath('{src_matlab}'); run_pipeline('{temp_path_fwd}'); exit;"
+                cmd_inner = f"addpath('{temp_dir_fwd}'); run_pipeline('{temp_path_fwd}'); exit;"
                 
             # Pass global savepath to execution dialog so the user can open it
             global_savepath = self.pipeline_settings.get('global_savepath', '')
             if not global_savepath:
                  global_savepath = self.cwd_edit.text()
                 
-            self.execution_dialog = ExecutionDialog(global_savepath, self)
+            self.execution_dialog = ExecutionDialog(global_savepath, self, save_log=self.pipeline_settings.get('save_matlab_log', False))
             self.execution_dialog.start_execution(matlab_path, ["-batch", cmd_inner])
             
         except Exception as e:

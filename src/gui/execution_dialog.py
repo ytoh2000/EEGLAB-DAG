@@ -4,9 +4,11 @@ from PyQt6.QtCore import QProcess, Qt
 class ExecutionDialog(QDialog):
     """A dialog to display live console output from a running background process (like MATLAB)."""
     
-    def __init__(self, global_savepath=None, parent=None):
+    def __init__(self, global_savepath=None, parent=None, save_log=False):
         super().__init__(parent)
         self.global_savepath = global_savepath
+        self.save_log = save_log
+        self.log_file = None
         self.setWindowTitle("MATLAB Pipeline Execution")
         self.resize(700, 500)
         self.setModal(False) # Non-modal so user can interact with main window if needed
@@ -58,8 +60,29 @@ class ExecutionDialog(QDialog):
         cmd_str = f"{program} " + " ".join([f'"{arg}"' if ' ' in arg else arg for arg in arguments])
         self.output_view.appendPlainText(f"> Starting MATLAB Execution...\n> Command: {cmd_str}\n")
         
+        if self.save_log and self.global_savepath:
+            self._setup_logging()
+            
         self.process.start(program, arguments)
         self.show()
+
+    def _setup_logging(self):
+        import os
+        from datetime import datetime
+        try:
+            log_dir = os.path.join(self.global_savepath, "log")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"log_run_MATLAB_{timestamp}.log"
+            log_path = os.path.join(log_dir, filename)
+            
+            self.log_file = open(log_path, "w", encoding="utf-8")
+            self.output_view.appendPlainText(f"> Log file: {log_path}\n")
+        except Exception as e:
+            self.output_view.appendPlainText(f"> Warning: Could not create log file: {e}\n")
+            self.log_file = None
         
     def _insert_text_handling_backspace(self, text):
         cursor = self.output_view.textCursor()
@@ -81,11 +104,17 @@ class ExecutionDialog(QDialog):
         data = self.process.readAllStandardOutput()
         text = bytes(data).decode('utf-8', errors='replace')
         self._insert_text_handling_backspace(text)
+        if self.log_file:
+            self.log_file.write(text)
+            self.log_file.flush()
 
     def handle_stderr(self):
         data = self.process.readAllStandardError()
         text = bytes(data).decode('utf-8', errors='replace')
         self._insert_text_handling_backspace(text)
+        if self.log_file:
+            self.log_file.write(text)
+            self.log_file.flush()
 
     def open_savepath(self):
         import os
@@ -107,6 +136,9 @@ class ExecutionDialog(QDialog):
         self.output_view.appendPlainText(f"\n> Execution Finished (Exit Code: {exit_code})")
         self.btn_cancel.setEnabled(False)
         self.btn_close.setEnabled(True)
+        if self.log_file:
+            self.log_file.close()
+            self.log_file = None
 
     def cancel_execution(self):
         """Kills the running process."""
@@ -115,7 +147,10 @@ class ExecutionDialog(QDialog):
             self.process.kill()
             
     def closeEvent(self, event):
-        """Ensure process is killed if user closes the window while it's running."""
+        """Ensure process is killed and log is closed if user closes the window while it's running."""
         if self.process.state() == QProcess.ProcessState.Running:
             self.process.kill()
+        if self.log_file:
+            self.log_file.close()
+            self.log_file = None
         super().closeEvent(event)
