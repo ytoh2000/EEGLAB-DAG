@@ -31,6 +31,14 @@
             "default": 80
         },
         {
+            "name": "filtorder",
+            "type": "int",
+            "arg_type": "positional",
+            "description": "Filter order (filter length - 1). Mandatory even.",
+            "required": false,
+            "default": ""
+        },
+        {
             "name": "revfilt",
             "type": "bool",
             "arg_type": "positional",
@@ -38,16 +46,32 @@
             "default": false
         },
         {
+            "name": "usefft",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Ignored (backward compatibility only)",
+            "default": ""
+        },
+        {
+            "name": "plotfreqz",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Plot frequency response (true/false)",
+            "default": false
+        },
+        {
+            "name": "minphase",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Use minimum-phase converted causal filter (true/false)",
+            "default": false
+        },
+        {
             "name": "options",
             "type": "key_value_list",
             "description": "Additional filtering options",
             "required": false,
-            "allowed_keys": {
-                "filtorder": "Filter order (filter length - 1). Mandatory even.",
-                "minphase": "Use minimum-phase converted causal filter (true/false)",
-                "plotfreqz": "Plot frequency response (true/false)",
-                "usefft": "Ignored (backward compatibility only)"
-            },
+            "allowed_keys": {},
             "default": []
         }
     ],

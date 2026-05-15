@@ -165,7 +165,9 @@ class JobExporter:
                         continue
                     name = inp.get('name')
                     arg_type = inp.get('arg_type', 'name-value')
-                    val = node.params.get(name, inp.get('default'))
+                    val = node.params.get(name)
+                    if val is None or val == '' or val == 'off':
+                        val = inp.get('default')
                     
                     if val == 'off' or val == '':
                         if arg_type == 'positional':
