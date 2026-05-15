@@ -35,6 +35,11 @@ function pop_launch_dag()
             
             % macOS requires the 'open' command for .app bundles
             command = sprintf('open "%s"', bin_path);
+        elseif ispc
+            % On Windows, CD into the directory first to help PyInstaller find its 
+            % PKG archive and DLLs, especially on network drives or long paths.
+            [bin_dir, bin_name, bin_ext] = fileparts(bin_path);
+            command = sprintf('cd /d "%s" && start "" "%s%s"', bin_dir, bin_name, bin_ext);
         else
             command = sprintf('"%s" &', bin_path);
         end
