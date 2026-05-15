@@ -145,7 +145,7 @@ function run_pipeline(job_file)
 
 end
 
-    % Robust path handling for cross-platform (e.g. Mac /Volumes/ paths on Windows)
+function process_single_file(file_path, steps)
     if ispc && ~exist(file_path, 'file') && startsWith(file_path, '/Volumes/')
         % On Windows, /Volumes/VolumeName/Path often maps to Drive:\Path
         % If the current drive is already mapped to the volume, we try stripping the prefix.

@@ -22,7 +22,13 @@ class MainWindow(QMainWindow):
             "test_mode": False,
             "test_sample_size": 1,
             "parallel_processing": False,
+            "use_global_savepath": True,
             "global_savepath": "",
+            "pipeline_id": "DAG",
+            "bids_dataset_name": "",
+            "bids_authors": "",
+            "bids_default_task": "",
+            "bids_modality": "eeg",
             "save_matlab_log": False,
             "save_matlab_code": False
         }
@@ -470,8 +476,9 @@ class MainWindow(QMainWindow):
             
         # 1. Determine global savepath and initialize execution dialog immediately
         # This ensures that logging starts before any preparation steps.
-        global_savepath = self.pipeline_settings.get('global_savepath', '')
-        if not global_savepath:
+        if self.pipeline_settings.get('use_global_savepath', True) and self.pipeline_settings.get('global_savepath'):
+             global_savepath = self.pipeline_settings.get('global_savepath')
+        else:
              global_savepath = self.cwd_edit.text()
              
         self.execution_dialog = ExecutionDialog(global_savepath, self, 

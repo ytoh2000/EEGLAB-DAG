@@ -13,7 +13,7 @@ class PipelineSettingsWidget(QWidget):
             "test_mode": False,
             "test_sample_size": 1,
             "parallel_processing": False,
-            "use_global_savepath": False,
+            "use_global_savepath": True,
             "global_savepath": "",
             "pipeline_id": "DAG",
             "bids_dataset_name": "",
