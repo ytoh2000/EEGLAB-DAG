@@ -77,6 +77,7 @@ function run_pipeline(job_file)
     % 3. Extract Settings
     % 'settings' was already populated above during parsing
     
+    % 4. Initialize Settings & Change Directory
     error_strategy = 'halt';
     if isfield(settings, 'error_strategy')
         error_strategy = settings.error_strategy;
@@ -85,6 +86,39 @@ function run_pipeline(job_file)
     test_mode = false;
     if isfield(settings, 'test_mode')
         test_mode = settings.test_mode;
+    end
+    
+    % If a global save path is provided, try to CD to it
+    % This helps resolve relative paths on mapped network drives (e.g. Z:)
+    if isfield(settings, 'global_savepath') && ~isempty(settings.global_savepath)
+        gpath = settings.global_savepath;
+        try
+            if ispc
+                % On Windows, handle potential drive letter change
+                if length(gpath) >= 2 && gpath(2) == ':'
+                    drive = gpath(1:2);
+                    % Check if drive exists before CD
+                    if exist(drive, 'dir')
+                        cd(drive);
+                        fprintf('  -> Changed current drive to %s\n', drive);
+                    end
+                end
+            end
+            
+            if exist(gpath, 'dir')
+                cd(gpath);
+                fprintf('  -> Changed current directory to %s\n', gpath);
+            else
+                % Try creating it if it doesn't exist
+                [ok, msg] = mkdir(gpath);
+                if ok
+                    cd(gpath);
+                    fprintf('  -> Created and changed directory to %s\n', gpath);
+                end
+            end
+        catch ME
+            fprintf('  -> Warning: Could not change directory to %s: %s\n', gpath, ME.message);
+        end
     end
     
     test_sample_size = 1;
@@ -155,20 +189,35 @@ function file_path = util_normalize_path(file_path)
         if startsWith(file_path, '/Volumes/')
             parts = strsplit(file_path, '/');
             if length(parts) >= 4
-                % Parts: {'', 'Volumes', 'VolumeName', 'Path', ...}
-                % If VolumeName is marsh_lab2 and we are on Z:, we want Z:\Path
-                % Try to match volume name or just strip it if we are already in a mapped drive
+                % Strategy: Strip /Volumes/VolumeName/ and try absolute on current drive root
+                % or try relative to PWD.
+                rel_path = strjoin(parts(4:end), '\');
                 
-                % Strategy: Strip /Volumes/VolumeName/ and try relative to PWD first
-                rel_path = strjoin(parts(4:end), filesep);
-                
-                % If it exists relative to current drive, use it
+                % 1. Try relative to current directory
                 if exist(rel_path, 'file')
                     file_path = rel_path;
-                else
-                    % Try common drive letters or just prepend filesep for relative
-                    file_path = rel_path;
+                    return;
                 end
+                
+                % 2. Try at the root of the current drive (common for mapped drives)
+                root_path = ['\' rel_path];
+                if exist(root_path, 'file')
+                    file_path = root_path;
+                    return;
+                end
+                
+                % 3. Brute force: check common mapped drive letters
+                drives = 'ZYXWVUTSRQPONMLKJIHGFEDC';
+                for i = 1:length(drives)
+                    drive_path = [drives(i) ':\' rel_path];
+                    if exist(drive_path, 'file')
+                        file_path = drive_path;
+                        return;
+                    end
+                end
+                
+                % 4. Fallback: just return the relative path from the root
+                file_path = root_path;
             end
         end
         % Final Windows normalization
