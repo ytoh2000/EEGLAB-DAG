@@ -171,10 +171,16 @@ class JobExporter:
                             arguments.append([])
                         continue
                         
+                    formatted_val = self._format_value(name, val, inp)
+                    
                     if arg_type == 'positional':
-                        arguments.append(val)
+                        arguments.append(formatted_val)
                     else:
-                        arguments.extend([name, val])
+                        if inp.get('type') == 'key_value_list' and isinstance(formatted_val, list):
+                            # Flatten key-value pairs directly into arguments
+                            arguments.extend(formatted_val)
+                        else:
+                            arguments.extend([name, formatted_val])
                 
                 # Trim trailing empties for positional args
                 while arguments and arguments[-1] == []:
@@ -208,3 +214,46 @@ class JobExporter:
         }
         
         return job
+    def _format_value(self, name, val, inp_def):
+        list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps', 'trials', 'items', 'chan'}
+        
+        # 1. Handle Key-Value list (options)
+        if inp_def and inp_def.get('type') == 'key_value_list':
+             # If it's a list of pairs [[k,v], ...]
+             if isinstance(val, list) and val and isinstance(val[0], list) and len(val[0]) == 2:
+                 flattened = []
+                 for k, v in val:
+                     flattened.extend([k, v])
+                 return flattened
+             return val
+
+        # 2. Handle space-separated strings for known list parameters
+        if name in list_params and isinstance(val, str):
+            val = val.strip()
+            if val.startswith('[') and val.endswith(']'):
+                val = val[1:-1].strip()
+            if not val:
+                return []
+            
+            # Split by space or comma
+            import re
+            parts = [p.strip() for p in re.split(r'[,\s]+', val) if p.strip()]
+            
+            if not parts:
+                return []
+            
+            # Try to convert to numbers if possible
+            try:
+                numeric = []
+                for p in parts:
+                    n = float(p)
+                    if n == int(n):
+                        numeric.append(int(n))
+                    else:
+                        numeric.append(n)
+                return numeric
+            except:
+                # Return as list of strings
+                return [p.strip("'\"") for p in parts]
+        
+        return val
