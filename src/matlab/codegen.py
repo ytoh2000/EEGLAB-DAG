@@ -89,15 +89,17 @@ class CodeGenerator:
             
             if node.type != 'input' and node.type != 'transfer':
                 code.append(f"% Params for {node.label}")
+                # Get input schema to identify types
+                input_schema = {inp['name']: inp.get('type') for inp in node.inputs}
+                
                 for k, v in node.params.items():
-                    if isinstance(v, bool):
-                        v_str = str(v).lower()
-                    elif isinstance(v, str):
-                        v_str = self._format_param_for_matlab(k, v)
-                    elif isinstance(v, list):
-                        v_str = "{" + ", ".join([f"'{x}'" if isinstance(x, str) else str(x) for x in v]) + "}"
-                    else:
-                        v_str = str(v)
+                    # Skip data-flow parameters
+                    if input_schema.get(k) == 'dataset':
+                        continue
+                    if k == 'file_paths': # internal
+                        continue
+                        
+                    v_str = self._format_param_for_matlab(k, v)
                     code.append(f"param.{unique_id}.{k} = {v_str};")
                 code.append("")
                 
@@ -221,18 +223,43 @@ class CodeGenerator:
         return "\n".join(code)
 
     def _format_param_for_matlab(self, pname, pval):
-        list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'}
-        if pname not in list_params:
-            # Handle Key-Value list (list of pairs)
-            if isinstance(pval, list) and pval and isinstance(pval[0], list) and len(pval[0]) == 2:
-                items = []
-                for k, v in pval:
-                    v_repr = f"'{v}'" if isinstance(v, str) else str(v).lower() if isinstance(v, bool) else str(v)
-                    items.append(f"{{'{k}', {v_repr}}}")
-                return "{" + ", ".join(items) + "}"
-            return f"'{pval}'"
+        if pval is None:
+            return "[]"
+        if isinstance(pval, bool):
+            return "true" if pval else "false"
             
-        # Try to parse it into a MATLAB array string
+        list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'}
+        
+        # Handle Key-Value list (list of pairs)
+        if isinstance(pval, list) and pval and isinstance(pval[0], list) and len(pval[0]) == 2:
+            items = []
+            for k, v in pval:
+                v_repr = self._format_param_for_matlab(None, v) # Recurse for the value
+                items.append(f"{{'{k}', {v_repr}}}")
+            return "{" + ", ".join(items) + "}"
+            
+        if pname not in list_params:
+            if isinstance(pval, list):
+                # Standard list
+                items = [self._format_param_for_matlab(None, x) for x in pval]
+                return "{" + ", ".join(items) + "}"
+                
+            if isinstance(pval, str):
+                # Try to see if it's a number disguised as a string
+                try:
+                    if pval.strip() and all(c in "0123456789.- " for c in pval.strip()):
+                        # Check if it's a simple number
+                        if ' ' not in pval.strip():
+                            float(pval)
+                            return pval
+                except:
+                    pass
+                return f"'{pval}'"
+            return str(pval)
+            
+        # For known list params, try to parse it into a MATLAB array string if it's a string
+        if isinstance(pval, str):
+            # ... existing logic ...
         val = pval.strip()
         if val.startswith('[') and val.endswith(']'):
             val = val[1:-1].strip()
