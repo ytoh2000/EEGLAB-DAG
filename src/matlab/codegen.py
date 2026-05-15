@@ -88,7 +88,8 @@ class CodeGenerator:
                 if isinstance(v, bool):
                     v_str = str(v).lower()
                 elif isinstance(v, str):
-                    v_str = f"'{v}'"
+                    # Smart formatting for lists
+                    v_str = self._format_param_for_matlab(k, v)
                 elif isinstance(v, list):
                     v_str = "{" + ", ".join([f"'{x}'" if isinstance(x, str) else str(x) for x in v]) + "}"
                 else:
@@ -205,6 +206,35 @@ class CodeGenerator:
         
         code.append(self._get_boilerplate())
         return "\n".join(code)
+
+    def _format_param_for_matlab(self, pname, pval):
+        list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'}
+        if pname not in list_params:
+            return f"'{pval}'"
+            
+        # Try to parse it into a MATLAB array string
+        val = pval.strip()
+        if val.startswith('[') and val.endswith(']'):
+            val = val[1:-1].strip()
+        if (val.startswith("'") and val.endswith("'")) or (val.startswith('"') and val.endswith('"')):
+            val = val[1:-1]
+            
+        if not val:
+            return "[]"
+            
+        import re
+        parts = re.split(r'[,\s]+', val)
+        parts = [p.strip().replace("'", "").replace('"', "") for p in parts if p.strip()]
+        
+        if not parts:
+            return "[]"
+            
+        # Check if all are numbers
+        try:
+            [float(p) for p in parts]
+            return "[" + " ".join(parts) + "]"
+        except ValueError:
+            return "{" + ", ".join([f"'{p}'" for p in parts]) + "}"
         
     def _get_boilerplate(self):
         return """
@@ -276,6 +306,13 @@ function [EEG, log] = step_process(EEG, stepParam, log, funcName, stepKeyword, p
             
             val = stepParam.(fields{i});
             if isempty(val); continue; end
+            
+            % Auto-parse potential lists
+            list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
+            if ismember(fields{i}, list_params)
+                val = util_parse_list(val);
+            end
+            
             args{end+1} = fields{i};
             args{end+1} = val;
         end
@@ -340,12 +377,18 @@ function log = step_plot(EEG, stepParam, log, funcName, stepKeyword, param)
             save_file = [fname '_desc-' plot_desc '.png'];
         end
         
-        for i=1:length(fields)\n
+        for i=1:length(fields)
             % Skip pipeline-managed fields — not passed as args to the plot function
             if ismember(fields{i}, {'use_global_savepath', 'filepath', 'filename'}); continue; end
             
             val = stepParam.(fields{i});
             if isempty(val); continue; end
+            
+            % Auto-parse potential lists
+            list_params = {'rmchannel', 'channel', 'badchans', 'chanind', 'exclude', 'ref', 'components', 'electrodes', 'icacomps'};
+            if ismember(fields{i}, list_params)
+                val = util_parse_list(val);
+            end
             
             args{end+1} = fields{i};
             args{end+1} = val;
@@ -430,5 +473,63 @@ function util_createReport(param, log)
     if ~param.openWeb; return; end
     disp('Generating HTML report from log...');
     % Detailed HTML report logic can be expanded here based on pipeline_ICCRN_Jeremy.m
+end
+
+function val = util_parse_list(val)
+    % Parses a space/comma separated string into a numeric array or cell array of strings.
+    if ~ischar(val) || isempty(val)
+        return;
+    end
+    
+    val = strtrim(val);
+    
+    % Strip brackets if present
+    if startsWith(val, '[') && endsWith(val, ']')
+        val = strtrim(val(2:end-1));
+    end
+    
+    % Strip quotes if they wrap the whole thing
+    if (startsWith(val, "'") && endsWith(val, "'")) || (startsWith(val, '"') && endsWith(val, '"'))
+        val = val(2:end-1);
+    end
+    
+    if isempty(val)
+        val = [];
+        return;
+    end
+    
+    % Split by spaces or commas
+    parts = strsplit(val, {',', ' '});
+    parts = parts(~cellfun(@isempty, parts));
+    
+    if isempty(parts)
+        val = [];
+        return;
+    end
+    
+    % Check if all parts are numbers
+    all_num = true;
+    nums = zeros(1, length(parts));
+    for i = 1:length(parts)
+        p = parts{i};
+        % Strip quotes from individual parts if present
+        if (startsWith(p, "'") && endsWith(p, "'")) || (startsWith(p, '"') && endsWith(p, '"'))
+            p = p(2:end-1);
+            parts{i} = p;
+        end
+        
+        n = str2double(p);
+        if isnan(n)
+            all_num = false;
+        else
+            nums(i) = n;
+        end
+    end
+    
+    if all_num
+        val = nums;
+    else
+        val = parts;
+    end
 end
 """
