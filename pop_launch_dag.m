@@ -55,9 +55,10 @@ function pop_launch_dag()
                 path_hash = sprintf('%x', sum(double(bin_dir)));
                 local_dir = fullfile(local_root, path_hash);
                 
-                % Mirror the critical folders (bin and library) to local cache
-                % This ensures that relative paths like ../../../library/nodes work
-                folders_to_copy = {'bin', 'library'};
+                % Mirror the critical folders (bin, library, and src) to local cache
+                % This ensures that relative paths like ../../../library/nodes and
+                % ../../../src/matlab/run_pipeline.m work correctly.
+                folders_to_copy = {'bin', 'library', 'src'};
                 success_count = 0;
                 
                 for f = 1:length(folders_to_copy)
