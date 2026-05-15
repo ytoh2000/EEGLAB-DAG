@@ -145,7 +145,6 @@ function run_pipeline(job_file)
 
 end
 
-function process_single_file(file_path, steps)
     % Robust path handling for cross-platform (e.g. Mac /Volumes/ paths on Windows)
     if ispc && ~exist(file_path, 'file') && startsWith(file_path, '/Volumes/')
         % On Windows, /Volumes/VolumeName/Path often maps to Drive:\Path
