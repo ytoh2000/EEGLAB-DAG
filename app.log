@@ -1,9 +1,1 @@
-2026-05-15 14:10:39,084 - root - INFO - Starting EEGLAB-DAG Application
-2026-05-15 14:12:22,739 - root - ERROR - Uncaught exception
-Traceback (most recent call last):
-  File "/Users/ohy2/Documents/GitHubRepo/EEGLAB-DAG/src/gui/mainwindow.py", line 580, in export_matlab_script
-    from src.matlab.codegen import CodeGenerator
-  File "/Users/ohy2/Documents/GitHubRepo/EEGLAB-DAG/src/matlab/codegen.py", line 263
-    val = pval.strip()
-    ^^^
-IndentationError: expected an indented block after 'if' statement on line 261
+2026-05-15 14:23:15,844 - root - INFO - Starting EEGLAB-DAG Application

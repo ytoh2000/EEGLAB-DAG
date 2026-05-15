@@ -89,8 +89,13 @@ class CodeGenerator:
             
             if node.type != 'input' and node.type != 'transfer':
                 code.append(f"% Params for {node.label}")
-                # Get input schema to identify types
-                input_schema = {inp['name']: inp.get('type') for inp in node.inputs}
+                # Get input schema from library to identify types (e.g. to skip datasets)
+                from src.model.library import LibraryManager
+                lib = LibraryManager.instance()
+                step_def = lib.get_step_by_function(node.function)
+                input_schema = {}
+                if step_def:
+                    input_schema = {inp['name']: inp.get('type') for inp in step_def.get('inputs', [])}
                 
                 for k, v in node.params.items():
                     # Skip data-flow parameters
