@@ -13,9 +13,6 @@ class ExecutionDialog(QDialog):
         self.resize(700, 500)
         self.setModal(False) # Non-modal so user can interact with main window if needed
         
-        if self.save_log and self.global_savepath:
-            self._setup_logging()
-        
         layout = QVBoxLayout(self)
         
         self.output_view = QPlainTextEdit(self)
@@ -55,6 +52,9 @@ class ExecutionDialog(QDialog):
         btn_layout.addWidget(self.btn_close)
         
         layout.addLayout(btn_layout)
+        
+        if self.save_log and self.global_savepath:
+            self._setup_logging()
         
         self.process = QProcess(self)
         self.process.readyReadStandardOutput.connect(self.handle_stdout)
