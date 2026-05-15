@@ -70,18 +70,44 @@
             "default": ""
         },
         {
-            "name": "options",
-            "type": "key_value_list",
-            "description": "Additional NEAR rejection options",
+            "name": "isPeriodogram",
+            "type": "bool",
+            "arg_type": "positional",
+            "description": "Detect outlier channels using windowed periodogram analysis (true/false)",
             "required": false,
-            "allowed_keys": {
-                "isPeriodogram": "Detect outlier channels using windowed periodogram analysis (true/false)",
-                "frange": "Frequency range for periodogram analysis [LowFreq HighFreq] (e.g. '[1 20]')",
-                "winsize": "Window length for periodogram analysis in seconds",
-                "winov": "Window overlap factor (0-1)",
-                "pthresh": "Threshold for periodogram-based outlier detection"
-            },
-            "default": []
+            "default": false
+        },
+        {
+            "name": "frange",
+            "type": "string",
+            "arg_type": "positional",
+            "description": "Frequency range for periodogram analysis [LowFreq HighFreq] (e.g. '[1 20]')",
+            "required": false,
+            "default": "[1 20]"
+        },
+        {
+            "name": "winsize",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Window length for periodogram analysis in seconds",
+            "required": false,
+            "default": 1.0
+        },
+        {
+            "name": "winov",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Window overlap factor (0-1)",
+            "required": false,
+            "default": 0.66
+        },
+        {
+            "name": "pthresh",
+            "type": "float",
+            "arg_type": "positional",
+            "description": "Threshold for periodogram-based outlier detection",
+            "required": false,
+            "default": 4.5
         },
         {
             "name": "isPlot",
