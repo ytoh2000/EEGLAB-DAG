@@ -14,10 +14,10 @@ class CodeGenerator:
         for e in self.pipeline.edges:
             G.add_edge(e.source, e.target)
             
-        # Find sources (in-degree 0) and sinks (out-degree 0 or output/visualization)
-        # We skip 'transfer' nodes for path calculation
-        proc_nodes = [n for n in self.pipeline.nodes if n.type != 'transfer']
-        proc_ids = [n.id for n in proc_nodes]
+        # We skip 'transfer' and 'visualization' nodes for path calculation
+        # to avoid branching paths for things like plots or utility nodes.
+        path_logic_nodes = [n for n in self.pipeline.nodes if n.type not in ['transfer', 'visualization']]
+        proc_ids = [n.id for n in path_logic_nodes]
         G_proc = G.subgraph(proc_ids).copy()
         
         sources = [n for n in G_proc.nodes if G_proc.in_degree(n) == 0]
@@ -69,33 +69,46 @@ class CodeGenerator:
         node_counts = {}
         path_nodes = []
         
-        for node_id in path:
-            node = node_map[node_id]
+        # Build full DAG for child lookup
+        full_G = nx.DiGraph()
+        for n in self.pipeline.nodes: full_G.add_node(n.id)
+        for e in self.pipeline.edges: full_G.add_edge(e.source, e.target)
+
+        processed_node_ids = set()
+
+        def add_node_and_viz(n_id):
+            if n_id in processed_node_ids:
+                return
+            processed_node_ids.add(n_id)
+            
+            node = node_map[n_id]
             func = node.function
-            if func not in node_counts:
-                node_counts[func] = 1
-            else:
-                node_counts[func] += 1
-                
+            node_counts[func] = node_counts.get(func, 0) + 1
             unique_id = f"{func}_{node_counts[func]}"
             path_nodes.append((unique_id, node))
             
-            if node.type == 'input' or node.type == 'transfer':
-                continue
+            if node.type != 'input' and node.type != 'transfer':
+                code.append(f"% Params for {node.label}")
+                for k, v in node.params.items():
+                    if isinstance(v, bool):
+                        v_str = str(v).lower()
+                    elif isinstance(v, str):
+                        v_str = self._format_param_for_matlab(k, v)
+                    elif isinstance(v, list):
+                        v_str = "{" + ", ".join([f"'{x}'" if isinstance(x, str) else str(x) for x in v]) + "}"
+                    else:
+                        v_str = str(v)
+                    code.append(f"param.{unique_id}.{k} = {v_str};")
+                code.append("")
                 
-            code.append(f"% Params for {node.label}")
-            for k, v in node.params.items():
-                if isinstance(v, bool):
-                    v_str = str(v).lower()
-                elif isinstance(v, str):
-                    # Smart formatting for lists
-                    v_str = self._format_param_for_matlab(k, v)
-                elif isinstance(v, list):
-                    v_str = "{" + ", ".join([f"'{x}'" if isinstance(x, str) else str(x) for x in v]) + "}"
-                else:
-                    v_str = str(v)
-                code.append(f"param.{unique_id}.{k} = {v_str};")
-            code.append("")
+            # Look for visualization children in the full graph
+            for child_id in full_G.successors(n_id):
+                child = node_map[child_id]
+                if child.type == 'visualization':
+                    add_node_and_viz(child_id)
+
+        for node_id in path:
+            add_node_and_viz(node_id)
 
         code.append("%% GET LIST OF FILES TO PROCESS")
         input_node = next((n for _, n in path_nodes if n.function == 'get_files'), None)
